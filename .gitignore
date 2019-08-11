@@ -1,3 +1,4 @@
+.DS_Store
 *.pyc
 *.log
 /stanford-corenlp-full-2018-10-05/
