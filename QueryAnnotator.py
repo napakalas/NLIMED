@@ -190,14 +190,18 @@ class StanfordAnnotator(Annotator):
         super(StanfordAnnotator, self).__init__(topConsider, **settings)
         if StanfordAnnotator.serverIsStarted == False:
             # check whether the http server is up or not
-            connectionStatus = urllib.request.urlopen("http://localhost:9000").getcode()
-            # Start the server in the background
             try:
-                if connectionStatus != 200:
-                    StanfordAnnotator.server.start()
+                connectionStatus = urllib.request.urlopen("http://localhost:9000").getcode()
+                if connectionStatus == 200:
+                    print('Server has been started')
+                    StanfordAnnotator.serverIsStarted = True
             except:
-                print('Server can not be started')
-            StanfordAnnotator.serverIsStarted = True
+                try:
+                    # Start the server in the background
+                    StanfordAnnotator.server.start()
+                    StanfordAnnotator.serverIsStarted = True
+                except:
+                    print('Server can not be started')
 
     def stopServer(self):
         StanfordAnnotator.server.stop()

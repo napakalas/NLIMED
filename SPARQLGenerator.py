@@ -23,15 +23,14 @@ class SPARQLGenerator:
         self.tail_1 = ' ?Model_entity <http://purl.org/dc/terms/description> ?desc . }}'
         self.tail_2 = ' }}'
         #get id predicate description
+        self.tracksWithDesc = set()
         for predId, value in self.idxs['idx_id_pred'].items():
             if value[1] == 'description':
                 nsId = value[0]
                 if self.idxs['idx_pref_ns'][str(nsId)]=='http://purl.org/dc/terms/':
                     for trackId, track in self.idxs['idx_id_track'].items():
                         if predId in track:
-                            self.trackDesc = trackId
-                            break
-                    break
+                            self.tracksWithDesc.add(trackId)
 
     def constructSPARQL(self, *objs):
         index_obj = copy.deepcopy(self.idxs['idx_object_id'])
@@ -78,7 +77,7 @@ class SPARQLGenerator:
                 query_track_ids = list(itertools.product(*query_track_ids))
                 query_seq_track_ids += query_track_ids
                 for query_track_id in query_track_ids:
-                    hasDescription[query_track_id] = True if self.trackDesc in index_sbj_track[sbj] else False
+                    hasDescription[query_track_id] = True if any(trackId in index_sbj_track[sbj] for trackId in self.tracksWithDesc) else False
             #remove duplicate, there is possibility more than 1 query
             query_seq_track_ids = set(query_seq_track_ids)
             #construct query for each possible query
