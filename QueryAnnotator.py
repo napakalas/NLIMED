@@ -1,78 +1,70 @@
 """MODUL: ANNOTATION"""
+import nltk
+from nltk.parse.corenlp import CoreNLPServer
+from nltk.tokenize import RegexpTokenizer
+import urllib.request
+from nltk.parse.corenlp import CoreNLPParser
 import operator
 import math
-import json
-from nltk.corpus import stopwords
-from abc import ABCMeta, abstractmethod, ABC
-import Settings
+import string
+from Settings import *
 
-class Annotator(ABC):
-    totSubject = int
-    inv_index = {}
-    idx_id_object = {}
-    topConsider = int
 
-    def __init__(self, topConsider, **settings):
-        self.m_prefDef = 4
-        self.m_synonym = 0.7
-        self.m_definition = 0.5
-        self.m_mention = 0.8
-        with open('inv_index', 'r') as fp:
-            Annotator.inv_index = json.load(fp)
-        with open('idx_id_object', 'r') as fp:
-            Annotator.idx_id_object = json.load(fp)
-        Annotator.totSubject = len(Annotator.idx_id_object)
-        Annotator.topConsider = topConsider
-        if len(settings) > 0:
-            self.m_prefDef = settings['m_prefDef']
-            self.m_synonym = settings['m_synonym']
-            self.m_definition = settings['m_definition']
-            self.m_mention = settings['m_mention']
+class Annotator(GeneralNLIMED):
+    def __init__(self, **settings):
+        # setting multipliers values (alpha, betha, gamma, delta)
+        self.m_prefDef = settings['alpha'] if 'alpha' in settings else 4
+        self.m_synonym = settings['beta'] if 'beta' in settings else 0.7
+        self.m_definition = settings['gamma'] if 'gamma' in settings else 0.5
+        self.m_mention = settings['delta'] if 'delta' in settings else 0.8
+        self.topConsider = settings['pl'] if 'pl' in settings else 1
+        if settings['repo'] == 'pmr':
+            self.inv_index = self._loadJson('inv_index')
+            self.idx_id_object = self._loadJson('idx_id_object')
+        elif settings['repo'] == 'bm':
+            self.inv_index = self._loadJson('BM_inv_index')
+            self.idx_id_object = self._loadJson('BM_selected_object.json')
+        self.totSubject = len(self.idx_id_object)
 
-    def __getPossibleObo(self,phrase):
-        if isinstance(phrase[0],tuple): # this is for tree from nltk
+    def __getPossibleObo(self, phrase):
+        if isinstance(phrase[0], tuple):  # this is for tree from nltk
             tmpPhrase = []
             for pair in phrase:
                 tmpPhrase += [pair[0]]
             phrase = tmpPhrase
         phrase = [w for w in phrase if not w in stopwords.words('english')]
-        w_prefDef = {}
-        w_synonym = {}
-        w_definition = {}
-        w_mention = {}
-        numOfToken = 0
-        candidate = {}
+        w_prefDef, w_synonym, w_definition, w_mention, candidate, numOfToken = {}, {}, {}, {}, {}, 0
         for token in phrase:
-            if token in Annotator.inv_index:
+            if token in self.inv_index:
                 numOfToken += 1
-                for key, val in Annotator.inv_index[token].items():
-                    if key not in w_prefDef:
-                        w_prefDef[key] = [(val[0],val[1])]
-                        w_synonym[key] = [(val[2],val[3])]
-                        w_definition[key] = [(val[4],val[5],len(Annotator.inv_index[token]))]
-                        w_mention[key] = [(val[6],val[7],val[8])]
-                    else:
-                        w_prefDef[key] += [(val[0],val[1])]
-                        w_synonym[key] += [(val[2],val[3])]
-                        w_definition[key] += [(val[4],val[5],len(Annotator.inv_index[token]))]
-                        w_mention[key] += [(val[6],val[7],val[8])]
-        for oboId in  w_prefDef:
-            candidate[oboId] = 0
-            for app, ln in w_prefDef[oboId]:
-                candidate[oboId] += self.m_prefDef * app / (ln + numOfToken)
-            for app, ln in w_synonym[oboId]:
-                candidate[oboId] += self.m_synonym * app / (ln + numOfToken)
-            for app, ln, lnInv in w_definition[oboId]:
-                candidate[oboId] += self.m_definition * app / (ln + numOfToken) / lnInv
-            for freq, docLen, totSbj in w_mention[oboId]:
-                candidate[oboId] += self.m_mention * freq / (docLen + numOfToken) * math.log(Annotator.totSubject/(Annotator.totSubject-totSbj))
-        phrase = " ".join(map(str,phrase))
-        candidate = sorted(candidate.items(), key=operator.itemgetter(1), reverse=True)
+                for key, val in self.inv_index[token].items():
+                    w_prefDef[key] = w_prefDef[key] + \
+                        [(val[0], val[1])] if key in w_prefDef else [
+                        (val[0], val[1])]
+                    w_synonym[key] = w_synonym[key] + \
+                        [(val[2], val[3])] if key in w_synonym else [
+                        (val[2], val[3])]
+                    w_definition[key] = w_definition[key] + [(val[4], val[5], len(
+                        self.inv_index[token]))] if key in w_definition else [(val[4], val[5], len(self.inv_index[token]))]
+                    w_mention[key] = w_definition[key] + [
+                        (val[6], val[7], val[8])] if key in w_mention else [(val[6], val[7], val[8])]
+        for oboId in w_prefDef:
+            candidate[oboId] = sum(
+                self.m_prefDef * app / (ln + numOfToken) for app, ln in w_prefDef[oboId])
+            candidate[oboId] += sum(self.m_synonym * app / (ln + numOfToken)
+                                    for app, ln in w_synonym[oboId])
+            candidate[oboId] += sum(self.m_definition * app / (ln + numOfToken) /
+                                    lnInv for app, ln, lnInv in w_definition[oboId])
+            candidate[oboId] += sum(self.m_mention * freq / (docLen + numOfToken) * math.log(
+                self.totSubject / (self.totSubject - totSbj)) for freq, docLen, totSbj in w_mention[oboId])
+        phrase = " ".join(map(str, phrase))
+        candidate = sorted(candidate.items(),
+                           key=operator.itemgetter(1), reverse=True)
         maxValue = candidate[0][1] if len(candidate) > 0 else 0
-        #choose best considered
-        if len(candidate)-1 > Annotator.topConsider:
-            candidate=candidate[0:Annotator.topConsider]
-        return {'phrase':phrase,'candidate':candidate,'maxValue':maxValue}
+        # choose best considered
+        if len(candidate) - 1 > self.topConsider:
+            candidate = candidate[0:self.topConsider]
+        return {'phrase': phrase, 'candidate': candidate, 'maxValue': maxValue}
 
     def _getObos(self, tree):
         hasAnnotated = {}
@@ -85,7 +77,7 @@ class Annotator(ABC):
                 entity = self.__getPossibleObo(subtree.leaves())
                 parentEntity = subtree.parent()
                 while parentEntity.label() != 'ROOT' and parentEntity.label() != 'NP' and parentEntity.label() != 'S':
-                    parentEntity = parentEntity.parent();
+                    parentEntity = parentEntity.parent()
                 posParent = parentEntity.treeposition()
                 if entity['phrase'] not in control:
                     hasAnnotated[pos] = entity
@@ -122,13 +114,13 @@ class Annotator(ABC):
         """reverse each combination"""
         for comb in bestCombination:
             comb[0] = comb[0][::-1]
-        return {'phrases':phrases,'result':bestCombination}
+        return {'phrases': phrases, 'result': bestCombination}
 
-    def __getBestCombination(self,hasAnnotated):
+    def __getBestCombination(self, hasAnnotated):
         termNum = len(hasAnnotated)
         count = 0
         multiplier = 2
-        if termNum>1:
+        if termNum > 1:
             key = list(hasAnnotated.keys())[0]
             newAnnotated = hasAnnotated.copy()
             newAnnotated.pop(key)
@@ -140,21 +132,21 @@ class Annotator(ABC):
                     prevCombList = prevCombination[0]
                     prevCombVal = prevCombination[1]
                     if oboClassId in prevCombList:
-                        currVal = prevCombVal + multiplier*val
+                        currVal = prevCombVal + multiplier * val
                         currCombList = prevCombList
                     else:
                         currVal = prevCombVal + val
-                        currCombList = prevCombList+[oboClassId]
-                    newList+=[[currCombList,currVal]]
+                        currCombList = prevCombList + [oboClassId]
+                    newList += [[currCombList, currVal]]
             return newList
-        elif termNum==1:
+        elif termNum == 1:
             key = list(hasAnnotated.keys())[0]
             candidates = hasAnnotated[key]['candidate']
             newList = []
             for oboClassId, val in candidates:
-                data = [[[oboClassId],val]]
+                data = [[[oboClassId], val]]
                 newList += data
-            return sorted(newList,key=operator.itemgetter(1),reverse=True)
+            return sorted(newList, key=operator.itemgetter(1), reverse=True)
         else:
             return []
 
@@ -162,53 +154,51 @@ class Annotator(ABC):
         print(result['phrases'])
         for pairs in result['result']:
             for pair in pairs[0]:
-                print('\t'+str(pair))
-            print('\t'+str(pairs[1]))
+                print('\t' + str(pair))
+            print('\t' + str(pairs[1]))
 
     @abstractmethod
     def annotate(self, tree):
         pass
+
     @abstractmethod
     def getTree(self, tree):
         pass
 
-from nltk.parse.corenlp import CoreNLPServer
-import os
-from  nltk.parse.corenlp  import CoreNLPParser
-from nltk.tree import ParentedTree
-import string
-import urllib.request
+
 class StanfordAnnotator(Annotator):
     serverIsStarted = False
-    STANFORD = os.path.join(".", "stanford-corenlp-full-2018-10-05")
-    server = CoreNLPServer(
-       os.path.join(STANFORD, "stanford-corenlp-3.9.2.jar"),
-       os.path.join(STANFORD, "stanford-english-corenlp-2018-10-05-models.jar"),
-    )
 
-    def __init__(self, topConsider, **settings):
-        super(StanfordAnnotator, self).__init__(topConsider, **settings)
+    def __init__(self, **settings):
+        super(StanfordAnnotator, self).__init__(**settings)
+        STANFORD = os.path.join(os.path.abspath("."), "stanford-corenlp-full-2018-10-05")
+        coreNLPFile = os.path.join(STANFORD, "stanford-corenlp-3.9.2.jar")
+        modelFile = os.path.join(STANFORD, "stanford-english-corenlp-2018-10-05-models.jar")
+        self.server = CoreNLPServer(coreNLPFile, modelFile,)
+
         if StanfordAnnotator.serverIsStarted == False:
             # check whether the http server is up or not
             try:
-                connectionStatus = urllib.request.urlopen("http://localhost:9000").getcode()
+                connectionStatus = urllib.request.urlopen(
+                    "http://localhost:9000").getcode()
                 if connectionStatus == 200:
                     print('Server has been started')
                     StanfordAnnotator.serverIsStarted = True
             except:
                 try:
                     # Start the server in the background
-                    StanfordAnnotator.server.start()
+                    self.server.start()
                     StanfordAnnotator.serverIsStarted = True
                 except:
                     print('Server can not be started')
 
     def stopServer(self):
-        StanfordAnnotator.server.stop()
+        self.server.stop()
         StanfordAnnotator.serverIsStarted = False
 
     def getTree(self, query):
-        query = query.translate(str.maketrans(string.punctuation, ' '*len(string.punctuation))).lower()
+        query = query.translate(str.maketrans(
+            string.punctuation, ' ' * len(string.punctuation))).lower()
         parser = CoreNLPParser()
         return ParentedTree.convert(next(parser.raw_parse(query)))
 
@@ -216,18 +206,14 @@ class StanfordAnnotator(Annotator):
         tree = self.getTree(query)
         return self._getObos(tree)
 
-from nltk.corpus import stopwords
-import nltk
-import string
-from nltk.tree import ParentedTree
-from nltk.tokenize import RegexpTokenizer
 
 class NLTKAnnotator(Annotator):
-    def __init__(self, topConsider, **settings):
-        super(NLTKAnnotator, self).__init__(topConsider, **settings)
+    def __init__(self, **settings):
+        super(NLTKAnnotator, self).__init__(**settings)
 
     def getTree(self, query):
-        query = query.translate(str.maketrans(string.punctuation, ' '*len(string.punctuation))).lower()
+        query = query.translate(str.maketrans(
+            string.punctuation, ' ' * len(string.punctuation))).lower()
         # Used when tokenizing words
         sentence_re = r"""
                 (?x)                # set flag to allow verbose regexps
@@ -235,9 +221,9 @@ class NLTKAnnotator(Annotator):
               | \w+(?:-\w+)*        # words with optional internal hyphens
               | \$?\d+(?:\.\d+)?%?  # currency and percentages, e.g. $12.40, 82%
               | \.\.\.              # ellipsis
-              | [][.,;"'?():_`-]    # these are separate tokens;
+              | [][.,;"'?():_`-]    # these are separate tokens; includes ], [
         """
-        #Taken from Su Nam Kim Paper...
+        # Taken from Su Nam Kim Paper...
         grammar = r"""
             NBAR:
                 {<NN.*|JJ>*<NN.*|NNS.*>}  # Nouns and Adjectives, terminated with Nouns
@@ -258,27 +244,27 @@ class NLTKAnnotator(Annotator):
         tree = self.getTree(query)
         return self._getObos(tree)
 
-import requests
+
 class OBOLIBAnnotator(Annotator):
-    def __init__(self, topConsider):
-        super(OBOLIBAnnotator, self).__init__(topConsider)
-        apikey = '?apikey='+Settings.apikey
+    def __init__(self, **settings):
+        super(OBOLIBAnnotator, self).__init__(**settings)
+        apikey = 'apikey=fc5d5241-1e8e-4b44-b401-310ca39573f6'
         ontologies = '&ontologies=MA,CHEBI,PR,GO,OPB,FMA,CL,UBERON'
         synonym = '&exclude_synonyms=false'
         whole_word_only = '&whole_word_only=true'
         exclude_numbers = '&exclude_numbers=false'
         longest_only = '&longest_only=true'
-        self.__server = 'http://data.bioontology.org/annotator'+apikey+ontologies+synonym+whole_word_only+exclude_numbers+longest_only+'&text='
+        self.__server = 'http://data.bioontology.org/annotator?' + apikey + ontologies + \
+            synonym + whole_word_only + exclude_numbers + longest_only + '&text='
 
-    def getTree(self,query):
+    def getTree(self, query):
         pass
 
-    def annotate(self,query):
-        r = requests.get(self.__server+query)
+    def annotate(self, query):
+        r = requests.get(self.__server + query)
         results = r.json()
-        if len(results)>0:
+        if len(results) > 0:
             selects = []
-            # print(r.status_code)
             for i in range(len(results)):
                 res = results[i]
                 oboId = res['annotatedClass']['@id']
@@ -290,15 +276,21 @@ class OBOLIBAnnotator(Annotator):
                         v_to = int(annot['to'])
                         v_text = annot['text']
                     else:
-                        v_from = int(annot['from']) if int(annot['from']) < v_from else v_from
-                        v_to = int(annot['to']) if int(annot['to']) > v_to else v_to
-                        v_text = annot['text'] +' '+ v_text if int(annot['from']) < v_from else v_text
-                        v_text += ' ' + annot['text'] if int(annot['to']) > v_to else v_text
+                        v_from = int(annot['from']) if int(
+                            annot['from']) < v_from else v_from
+                        v_to = int(annot['to']) if int(
+                            annot['to']) > v_to else v_to
+                        v_text = annot['text'] + ' ' + \
+                            v_text if int(annot['from']) < v_from else v_text
+                        v_text += ' ' + \
+                            annot['text'] if int(
+                                annot['to']) > v_to else v_text
                     v_len = v_to - v_from
                 if i == 0:
-                    selects += [{'oboId':oboId,'from':v_from,'to':v_to,'len':v_len,'text':v_text}]
+                    selects += [{'oboId': oboId, 'from': v_from,
+                                 'to': v_to, 'len': v_len, 'text': v_text}]
                 else:
-                    prevSelect = selects[len(selects)-1]
+                    prevSelect = selects[len(selects) - 1]
                     if prevSelect['from'] >= v_from and prevSelect['to'] <= v_to and prevSelect['len'] < v_len:
                         prevSelect['from'] = v_from
                         prevSelect['to'] = v_to
@@ -306,15 +298,17 @@ class OBOLIBAnnotator(Annotator):
                         prevSelect['text'] = v_text
                         prevSelect['oboId'] = oboId
                     elif prevSelect['from'] == v_from and prevSelect['to'] == v_to and prevSelect['oboId'] != oboId:
+                        #                         selects += [{'oboId':oboId,'from':v_from,'to':v_to,'len':v_len,'text':v_text}]
                         if 'fma' in oboId:
                             prevSelect['oboId'] = oboId
                         elif 'fma' not in prevSelect['oboId']:
                             prevSelect['oboId'] = oboId
                     elif prevSelect['to'] < v_from:
-                        selects += [{'oboId':oboId,'from':v_from,'to':v_to,'len':v_len,'text':v_text}]
+                        selects += [{'oboId': oboId, 'from': v_from,
+                                     'to': v_to, 'len': v_len, 'text': v_text}]
         phrases = []
         result = []
         for sel in selects:
             phrases += [sel['text']]
             result += [sel['oboId']]
-        return {'phrases':phrases,'result':[[result,1]]}
+        return {'phrases': phrases, 'result': [[result, 1]]}
