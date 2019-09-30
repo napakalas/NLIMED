@@ -5,7 +5,8 @@ import argparse
 
 dictArgs = {'repo': ['pmr', 'bm', 'all'], 'parser': ['stanford', 'nltk', 'ncbo'],
             'show': ['models', 'sparql', 'annotation', 'verbose'], 'pl': 1,
-
+            'alpha':4, 'beta':0.7, 'gamma':0.5, 'delta':0.8}
+dictArgsMandatory = {'repo','parser'}
 class NLIMED:
     def __init__(self, **vargs):
         isArgsValid = self.__isArgsValid(**vargs)
@@ -116,7 +117,6 @@ if sys.argv[0] == "NLIMED.py":
             return x
         parser.add_argument('-q', '--query', required=True,
                             help='query -- any text containing words', type=query_type)
-
         def pl_type(x):
             x = int(x)
             if x < 1:
@@ -135,14 +135,10 @@ if sys.argv[0] == "NLIMED.py":
                 return x
             else:
                 raise argparse.ArgumentTypeError("Query should contain words")
-        parser.add_argument(
-            '-a', '--alpha', default=dictArgs['alpha'], help='Minimum alpha is 0', type=multiply_type)
-        parser.add_argument(
-            '-b', '--beta', default=dictArgs['beta'], help='Minimum beta is 0', type=multiply_type)
-        parser.add_argument(
-            '-g', '--gamma', default=dictArgs['gamma'], help='Minimum gamma is 0', type=multiply_type)
-        parser.add_argument(
-            '-d', '--delta', default=dictArgs['delta'], help='Minimum delta is 0', type=multiply_type)
+        parser.add_argument('-a', '--alpha', default=dictArgs['alpha'], help='Minimum alpha is 0', type=multiply_type)
+        parser.add_argument('-b', '--beta', default=dictArgs['beta'], help='Minimum beta is 0', type=multiply_type)
+        parser.add_argument('-g', '--gamma', default=dictArgs['gamma'], help='Minimum gamma is 0', type=multiply_type)
+        parser.add_argument('-d', '--delta', default=dictArgs['delta'], help='Minimum delta is 0', type=multiply_type)
         args = vars(parser.parse_args())
         args['console'] = True
         return(args)
