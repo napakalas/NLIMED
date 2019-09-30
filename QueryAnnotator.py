@@ -12,6 +12,7 @@ from Settings import *
 
 class Annotator(GeneralNLIMED):
     def __init__(self, **settings):
+        super(Annotator, self).__init__()
         # setting multipliers values (alpha, betha, gamma, delta)
         self.m_prefDef = settings['alpha'] if 'alpha' in settings else 4
         self.m_synonym = settings['beta'] if 'beta' in settings else 0.7

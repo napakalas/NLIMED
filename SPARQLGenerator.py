@@ -7,6 +7,7 @@ from Settings import *
 
 class SPARQLGenerator(GeneralNLIMED):
     def __init__(self, repository):
+        super(SPARQLGenerator, self).__init__()
         self.repository = repository
         if repository == 'pmr':
             self.__initPMR()

@@ -8,9 +8,10 @@ class IndexAnnotation(GeneralNLIMED):
     """COLLECTING DATA FROM OBOLIBRARY"""
 
     def __init__(self, repository):
+        super(IndexAnnotation, self).__init__()
         self.repository = repository
         if self.repository == 'pmr':
-            self.__initPMR(args)
+            self.__initPMR()
         elif self.repository == 'bm':
             self.__buildIndexBM()
 
@@ -121,9 +122,9 @@ class IndexAnnotation(GeneralNLIMED):
     # mapObo structure: {'FMA:123':{'link':['http://purl.obolibrary.org/obo/FMA_123',...],'prefLabel':'','synonim':[],'definition':[]}, 'FMA:124':{...}, ...}
     def collectClassAttributes(self):
         if self.repository == 'pmr':
-            self.__collectClassAttributesPMR(args)
+            self.__collectClassAttributesPMR()
         elif self.repository == 'bm':
-            self.__collectClassAttributesBM(args)
+            self.__collectClassAttributesBM()
 
     def __collectClassAttributesPMR(self):
         f = open('listOfObjects.txt', 'r')
@@ -184,7 +185,7 @@ class IndexAnnotation(GeneralNLIMED):
 
     def developInvertedIndex(self):
         if self.repository == 'pmr':
-            self.__developInvertedIndexPMR(args)
+            self.__developInvertedIndexPMR()
         elif self.repository == 'bm':
             self.__developInvertedIndexBM()
 

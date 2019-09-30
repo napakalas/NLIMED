@@ -127,8 +127,6 @@ if sys.argv[0] == "NLIMED.py":
         parser.add_argument(
             '-s', '--show', default=dictArgs['show'][0], help='results presentation type ', choices=dictArgs['show'])
 
-
-
         def multiply_type(x):
             x = float(x)
             if x >= 0:

@@ -12,13 +12,14 @@ from Settings import *
 
 
 class IndexSPARQL(GeneralNLIMED):
-    def __init__(self, repository, **args):
+    def __init__(self, repository):
+        super(IndexSPARQL, self).__init__()
         self.isUpdate = True if 'update' not in args else args['update']
         self.repository = repository
 
     def buildIndex(self, *args):
         if self.repository == 'pmr':
-            self.__buildIndexPMR(args)
+            self.__buildIndexPMR(*args)
         elif self.repository == 'bm':
             self.__buildIndexBM()
 
