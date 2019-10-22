@@ -1,6 +1,9 @@
 .DS_Store
 *.pyc
 *.log
-/stanford-corenlp-full-2018-10-05/
 /__pycache__/
-
+config.txt
+test.py
+/NLIMED.egg-info/
+/build/
+/dist/

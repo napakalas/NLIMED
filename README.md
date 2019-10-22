@@ -5,79 +5,126 @@ In general, NLIMED works by converting natural language query into SPARQL, so it
 
 Note: model entities extracted from BioModels are those having ontologies indexed by BioPortal.
 
-Reference: https://doi.org/10.1101/756304
+License :: OSI Approved :: GNU General Public License (GPL)
 
-## General instruction
-1. Download or clone all files in a new folder
-2. NLIMED implements Stanford Parser, NLTK Parser, and NCBO parser. You may select one of them for your system.
+## References
+The main reference of this work is: https://doi.org/10.1101/756304
+
+Cite the following works when you implement NLIMED with parser of:
+1. CoreNLP: https://stanfordnlp.github.io/CoreNLP/citing.html
+2. NLTK: https://arxiv.org/abs/cs/0205028
+3. NCBO: https://www.ncbi.nlm.nih.gov/pubmed/21347171
+
+## Installation
+We sugest you to install NLIMED from PyPI. If you already installed [pip](https://pip.pypa.io/en/stable/installing/), run the following command:
+  ```
+  pip install NLIMED
+  ```
+This installation will also resolve nltk dependency.
+In a case you already have old NLIMED installation, you may update it use:
+  ```
+  pip install NLIMED -U
+  ```
+As an alternative, you can clone and download this github repository and use the following command:
+  ```
+  git clone https://github.com/napakalas/NLIMED.git
+  cd NLIMED
+  pip install -e .
+  ```
+
+## Configuration
+
+NLIMED implements Stanford Parser, NLTK Parser, and NCBO parser. You may select one of them for your system.
   * NLTK Parser:
-    - Install NLTK, please follow this link: https://www.nltk.org/install.html
-    ---
-    - **NOTE**
-    When installing NLTK, there is a possibility you are not download all modules. In this case, the following error may appear:
-
-      ```
-      ...
-      Attempted to load taggers/averaged_perceptron_tagger/averaged_perceptron_tagger.pickle
-      ...
-      ```
-    therefore you need to install the missing modules by running:
-
-      ```
-      $ nltk.download()
-      ```
-    ---
+    - NLTK is automatically deploy as a dependency.
   * NCBO parser:
-    - You have to get an apikey through [https://bioportal.bioontology.org/help#Getting_an_API_key](https://bioportal.bioontology.org/help#Getting_an_API_key) and setup the apikey in Settings.py file, line 16.
-
-      ```python
-      self.oboAPIKey = 'put your apikey here'
-      ```
+    - You have to get a [bioportal](https://bioportal.bioontology.org/help#Getting_an_API_key) apikey  and run the NLIMED config command.
 
   * Stanford Parser:
-    - Please download jar files of:
-      - stanford-corenlp
-      - stanford-english-corenlp-models.
+    - Download the [CoreNLP](https://stanfordnlp.github.io/CoreNLP/download.html) zip file and then extract it on your deployment folder.
 
-      from https://stanfordnlp.github.io/CoreNLP/download.html
+    - Based on stanford-corenlp version downloaded, you will find a different zip file and extracted folder names. For example, in this works, we get:
+      - a zip file : stanford-corenlp-full-2018-10-05.zip
+      - a folder   : stanford-corenlp-full-2018-10-05
 
-    - Based on stanford-corenlp version downloaded, you will find a different folder and files' name. For example, in this works, we use
-      - stanford-corenlp-full-2018-10-05.zip, and
-      - stanford-english-corenlp-2018-10-05-models.jar
+  * **Configuring Stanford and NCBO parsers**
+    If you intent to implement NLTK only, you don't need to configure. This configuration is for Stanford and NCBO parsers. Call NLIMED from terminal or command prompt using this syntax:
+    ```
+    NLIMED --config --apikey {your-ncbo-api-key} --corenlp-home {CoreNLP-folder-full-path}
+    ```
+    As an example if your NCBO apikey is "fc5d5241-1e8e-4b44-b401-310ca39573f6" and your CoreNLP folder is "/path/stanford-corenlp-full-2018-10-05/", the call will be:
+    ```
+    NLIMED --config --apikey "fc5d5241-1e8e-4b44-b401-310ca39573f6" --corenlp-home "/Users/user1/Documents/Stanford NLP/stanford-corenlp-full-2018-10-05/"
+    ```
 
-      Extracting the zip file will create stanford-corenlp-full-2018-10-05 folder where the stanford-corenlp file is stanford-corenlp-3.9.2.jar. Put the stanford-english-corenlp-models file in the same folder with stanford-corenlp. Then, modify QueryAnnotator.py file at line 174, 175, and 176, set these to your downloaded file names. Here are the lines that you should modify:
+## Issues
+1. In a case that all NLTK modules are not completely downloaded, the following error  may appear:
 
-      ```python
-      STANFORD = os.path.join(os.path.abspath("."), "stanford-corenlp-full-2018-10-05")
-            coreNLPFile = os.path.join(STANFORD, "stanford-corenlp-3.9.2.jar")
-            modelFile = os.path.join(STANFORD, "stanford-english-corenlp-2018-10-05-models.jar")
-      ```
+    ```
+    ...
+    Attempted to load taggers/averaged_perceptron_tagger/averaged_perceptron_tagger.pickle
+    ...
+    ```
+    try to install the missing modules by running:
 
-    ---
-    - **NOTE**
-    In some case, running Stanford Parser directly on Windows system may not work. It probably shows a message:
+    ```
+    $ nltk.download()
+    ```
 
-      ```
-      Windows could not start the CoreNLP service on Local Computer. The service did not return an error. This could be an internal Windows error or an internal service error. If the problem persists, contact your system administrator.
-      ```
+2. When using Stanford parser, you may find the following error message:
 
-      or
+    ```
+    ...
+    requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=9000): Max retries exceeded with url: /?properties=%7B%22outputFormat%22%3A+%22json%22%2C+%22annotators%22%3A+%22tokenize%2Cpos%2Clemma%2Cssplit%2Cparse%22%2C+%22ssplit.eolonly%22%3A+%22true%22%2C+%22tokenize.whitespace%22%3A+%22false%22%7D (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x00000215465682B0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))
+    ```
+    This problem usually caused by the slow start of local CoreNLP web services. The services are not completely started when the NLIMED try to utilise these. You can wait for a minute then rerun your command or code.
+    You may also start the services manually on command line or terminal. Go to your CoreNLP folder and run:
+    ```
+    java -mx4g -cp "*" edu.stanford.nlp.pipeline.StanfordCoreNLPServer -port 9000 -timeout 15000
+    ```
+    Then check the services availability on your web browser through link: http://localhost:9000/
 
-      ```
-      ...
-      requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=9000): Max retries exceeded with url: /?properties=%7B%22outputFormat%22%3A+%22json%22%2C+%22annotators%22%3A+%22tokenize%2Cpos%2Clemma%2Cssplit%2Cparse%22%2C+%22ssplit.eolonly%22%3A+%22true%22%2C+%22tokenize.whitespace%22%3A+%22false%22%7D (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x00000215465682B0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))
-      ```
-    Please refer to https://github.com/stanfordnlp/CoreNLP/issues/435 to overcome this issue.
-    ---
+## Experiment
+We conducted an experiment to measure NLIMED performance in term of:
+1. precision, recall and F-Measure
+2. comparison to NCBO Annotator, and
+3. features contribution
+
+You can get the [experiment](https://github.com/napakalas/NLIMED/experiment/) code and DataTest from this repository. Run the code using Jupyter Notebook.
+
+## How NLIMED works?
+Here is the process inside NLIMED converting natural language query (NLQ) and SPARQL and then retrieving model entities from biomodel repositories:
+1. NLQ Annotation -- Annotating NLQ to ontologies
+  - NLQ is parsed using selected parser (Stanford, NLTK, or NCBO), resulting candidate noun phrases (CNPs).
+  - Measuring association level of each CNP to ontologies. The measurement utilises four type of textual features, i.e. preferred label, synonym, description, and local definition by this formula:
+
+    ![Image](https://github.com/napakalas/NLIMED/resource/Eq-NLIMED.gif?raw=true)
+
+    where:
+    - <code>p<sub>i</sub>, s<sub>i</sub>, and d<sub>i</sub></code> are the present (1) or the absent (0) of term in preffered label, synonym, and definition consecutively.
+    - <code>f<sub>i</sub></code> is the number of term in description.
+    - <code>lp<sub>i</sub>, ls<sub>i</sub>, ld<sub>i</sub>, and lf<sub>i</sub></code> are the number of terms in preffered label, synonym, definition, and description consecutively.
+    - <code>nt</code> is the number of terms in a phrase
+    - <code>N</code> is the number of ontologies having the term
+    - <code>S</code> is the number of model entities in the collection.
+    - <code>ts<sub>i</sub></code> is the number of model entities having the term
+    - <code>&alpha;, &beta;, &gamma;, and &delta;</code> are multipliers to set the features importance level. The multipliers values are decided empirically based on the repositories.
+
+  - Select CNPs with highest association, having longest term, and not overlapping with other CNP. The selected CNPs should cover all terms in NLQ.
+  - Select the top pl of ontologies from selected CNPs
+  - Combine all possible ontologies with no overlapping CNPs
+2. SPARQL Generation
+  - Construct SPARQLs for each ontotology combinations
+3. Retrieve model entities by sending each SPARQLs to model repository SPARQL endpoints.
 
 ## Running NLIMED from console (query to get model entities)
 NLIMED can be run directly on command prompt or terminal. There are 2 mandatory arguments and 7 optional arguments. To get help about the required arguments, run:
 ```terminal
-$ python NLIMED.py -h
+NLIMED -h
 ```
 then you will get:
 ```terminal
-usage: NLIMED.py [-h] -r {pmr,bm,all} -p {stanford,nltk,ncbo} -q QUERY
+usage: NLIMED [-h] -r {pmr,bm,all} -p {stanford,nltk,ncbo} -q QUERY
                  [-pl PL] [-s {models,sparql,annotation,verbose}] [-a ALPHA]
                  [-b BETA] [-g GAMMA] [-d DELTA]
 
@@ -114,18 +161,18 @@ Here is the description of those arguments:
 ### Running example
 * running with minimum setup for repository = Physiome Model Repository, parser = NLTK, query = "flux of sodium", and other default arguments values:
   ```
-  $ python NLIMED.py -r pmr -p nltk -q "flux of sodium"
+  NLIMED -r pmr -p nltk -q "flux of sodium"
   ```
 * running with full setup for repository=BioModels, parser=Stanford, query="flux of sodium", precision level = 2, alpha = 2, beta = 1, gamma = 1, and delta = 1
   ```
-  $ python NLIMED.py -r bm -p stanford -q "flux of sodium" -pl 2 -a 2 -b 1 -g 1 -d 1
+  NLIMED -r bm -p stanford -q "flux of sodium" -pl 2 -a 2 -b 1 -g 1 -d 1
   ```
-  Note: running with Stanford parser may cause delay local server setup for the first run. However, for the next run, the delay is disappeared.
+  Note: running with Stanford parser may cause delay local server startup for the first run. However, for the next run, the delay is disappeared.
 
 * running for repository = Physiome Model Repository, parser = NCBO, query = "flux of sodium", precision level = 3,and other default arguments
 
   ```
-  $ python NLIMED.py -r pmr -p ncbo -q "flux of sodium" -pl 3
+  NLIMED -r pmr -p ncbo -q "flux of sodium" -pl 3
   ```
   Note: running with NCBO Parser parser is slower than other parsers because it is using a web service depended on the Internet connection.
 
@@ -494,18 +541,19 @@ It is also possible to get SPARQL only without model entities. It utilise getSpa
       OPTIONAL{?Model_entity <http://purl.org/dc/terms/description> ?desc .} }}'
   ]
   ```
+
 ## Recreate Indexes (RDF Graph Index and Text Feature Index)
 
-All indexes are already provided in this project. However, if you want to recreate all indexes you can use the following script on console. Please be patient, it may take times to be finished.
+All indexes are already provided in this project. However, if you want to recreate all indexes you can use the following script on command prompt or terminal. Please be patient, it may take times to be finished.
 
 ### Indexing the pmr
 
 ```
-$ python Indexer.py -r pmr
+NLIMED --build-index pmr
 ```
 
 ### Indexing biomodels
 
 ```
-$ python Indexer.py -r bm
+NLIMED --build-index bm
 ```

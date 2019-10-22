@@ -1,7 +1,7 @@
 """MODULE: GET ALL URI DATA FROM BioPortal AND BUILD Cellml INVERTED INDEX FOR AUTOMATIC ANNOTATION"""
 from nltk.tokenize import RegexpTokenizer
 import struct
-from Settings import *
+from NLIMED.Settings import *
 
 
 class IndexAnnotation(GeneralNLIMED):
@@ -16,7 +16,7 @@ class IndexAnnotation(GeneralNLIMED):
             self.__buildIndexBM()
 
     def __initPMR(self):
-        apikey = self.oboAPIKey
+        apikey = '?apikey='+self.apikey
         oboUrl = self.oboUrl
         self.servers = {
             'MA': oboUrl + 'MA/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FMA_{id}' + apikey,
@@ -30,32 +30,30 @@ class IndexAnnotation(GeneralNLIMED):
         }
 
     def __initBM(self):
-        oboAPIKey = self.oboAPIKey
+        apikey = '?apikey='+self.apikey
         oboUrl = self.oboUrl
-        oboAPIKey = "?apikey=fc5d5241-1e8e-4b44-b401-310ca39573f6"
-        oboUrl = "http://data.bioontology.org/ontologies/"
         self.ontoServers = {
-            "SO": oboUrl + "SO/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FSO_{$id}+" + oboAPIKey,
-            "SBO": oboUrl + "SBO/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FSBO_{$id}" + oboAPIKey,
-            "PW": oboUrl + "PW/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FPW_{$id}" + oboAPIKey,
-            "MOD": oboUrl + "PSIMOD/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FMOD_{$id}" + oboAPIKey,
-            "PR": oboUrl + "PR/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FGO_{$id}" + oboAPIKey,
-            "PATO": oboUrl + "PATO/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FPATO_{$id}" + oboAPIKey,
-            "OPB": oboUrl + "OPB/classes/http%3A%2F%2Fbhi.washington.edu%2FOPB%23OPB_{id}" + oboAPIKey,
-            "NCBITAXON": oboUrl + "NCBITAXON/classes/http%3A%2F%2Fpurl.bioontology.org%2Fontology%2FNCBITAXON%2F{$id}" + oboAPIKey,
-            "MAMO": oboUrl + "MAMO/classes/http%3A%2F%2Fidentifiers.org%2Fmamo%2FMAMO_{$id}" + oboAPIKey,
-            "GO": oboUrl + "GO/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FGO_{id}" + oboAPIKey,
-            "FMA": oboUrl + "FMA/classes/http%3A%2F%2Fpurl.org%2Fsig%2Font%2Ffma%2Ffma{id}" + oboAPIKey,
-            "EFO": oboUrl + "EFO/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FIAO__{$id}" + oboAPIKey,
-            "EDAM": oboUrl + "EDAM/classes/http%3A%2F%2Fedamontology.org%2Fdata_{$id}" + oboAPIKey,
-            "ECO": oboUrl + "ECO/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FECO_{$id}" + oboAPIKey,
-            "CL": oboUrl + "CL/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FCL_{id}" + oboAPIKey,
-            "CHEBI": oboUrl + "CHEBI/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FCHEBI_{id}" + oboAPIKey,
-            "BTO": oboUrl + "BTO/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FBTO_{$id}" + oboAPIKey,
-            "UNIPROT": "https://www.uniprot.org/uniprot/{$id}.txt",
-            "KEGG": "http://rest.kegg.jp/get/{$id}",
-            "EC-CODE": "ftp://ftp.ebi.ac.uk/pub/databases/intenz/xml/ASCII/EC_5/EC_5.4/EC_5.4.2/EC_{$id}.xml",
-            "ENSEMBL": "https://rest.ensembl.org/lookup/id/{$id}?content-type=application/json"
+            'SO': oboUrl + 'SO/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FSO_{$id}+' + apikey,
+            'SBO': oboUrl + 'SBO/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FSBO_{$id}' + apikey,
+            'PW': oboUrl + 'PW/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FPW_{$id}' + apikey,
+            'MOD': oboUrl + 'PSIMOD/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FMOD_{$id}' + apikey,
+            'PR': oboUrl + 'PR/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FGO_{$id}' + apikey,
+            'PATO': oboUrl + 'PATO/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FPATO_{$id}' + apikey,
+            'OPB': oboUrl + 'OPB/classes/http%3A%2F%2Fbhi.washington.edu%2FOPB%23OPB_{id}' + apikey,
+            'NCBITAXON': oboUrl + 'NCBITAXON/classes/http%3A%2F%2Fpurl.bioontology.org%2Fontology%2FNCBITAXON%2F{$id}' + apikey,
+            'MAMO': oboUrl + 'MAMO/classes/http%3A%2F%2Fidentifiers.org%2Fmamo%2FMAMO_{$id}' + apikey,
+            'GO': oboUrl + 'GO/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FGO_{id}' + apikey,
+            'FMA': oboUrl + 'FMA/classes/http%3A%2F%2Fpurl.org%2Fsig%2Font%2Ffma%2Ffma{id}' + apikey,
+            'EFO': oboUrl + 'EFO/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FIAO__{$id}' + apikey,
+            'EDAM': oboUrl + 'EDAM/classes/http%3A%2F%2Fedamontology.org%2Fdata_{$id}' + apikey,
+            'ECO': oboUrl + 'ECO/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FECO_{$id}' + apikey,
+            'CL': oboUrl + 'CL/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FCL_{id}' + apikey,
+            'CHEBI': oboUrl + 'CHEBI/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FCHEBI_{id}' + apikey,
+            'BTO': oboUrl + 'BTO/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FBTO_{$id}' + apikey,
+            'UNIPROT': 'https://www.uniprot.org/uniprot/{$id}.txt',
+            'KEGG': 'http://rest.kegg.jp/get/{$id}',
+            'EC-CODE': 'ftp://ftp.ebi.ac.uk/pub/databases/intenz/xml/ASCII/EC_5/EC_5.4/EC_5.4.2/EC_{$id}.xml',
+            'ENSEMBL': 'https://rest.ensembl.org/lookup/id/{$id}?content-type=application/json'
         }
         self.ontoMap = {'so': 'SO',
                         'biomodels.sbo': 'SBO',
@@ -146,7 +144,7 @@ class IndexAnnotation(GeneralNLIMED):
                         content = {'link': [cls['text']], 'prefLabel': res['prefLabel'],
                                    'synonym': res['synonym'], 'definition': res['definition']}
                         mapClass[clsId] = content
-        self._dumpJson(mapClass, 'mapClass.json')
+        self._dumpJson(mapClass, os.path.join(self.idxPath,'mapClass.json'))
 
     def __collectClassAttributesBM(self):
         totObject = len(self.idx_object)
@@ -173,13 +171,13 @@ class IndexAnnotation(GeneralNLIMED):
                             found += 1
                     except:
                         print("extraction error at object %d" % count)
-                        self._dumpJson(mapClass, 'BM_mapClass' +
+                        self._dumpJson(mapClass, 'indexes/BM_mapClass' +
                                        str(count) + '.json')
             count += 1
             if count % 1000 == 0:
                 print("extract %d of %d objects, found %d" %
                       (count, totObject, found))
-        self._dumpJson(mapClass, 'BM_mapClass.json')
+        self._dumpJson(mapClass, 'indexes/BM_mapClass.json')
 
     """EXTRACTING FEATURES AND BUILD INVERTED INDEX"""
 
@@ -190,9 +188,9 @@ class IndexAnnotation(GeneralNLIMED):
             self.__developInvertedIndexBM()
 
     def __developInvertedIndexPMR(self):
-        dataObo = self._loadJson('mapClass.json')
-        idx_sbj_obj = self._loadJson('idx_sbj_obj')
-        idx_id_object = self._loadJson('idx_id_object')
+        dataObo = self._loadJson('indexes/mapClass.json')
+        idx_sbj_obj = self._loadJson('indexes/idx_sbj_obj')
+        idx_id_object = self._loadJson('indexes/idx_id_object')
         # {'term0':{'OPB00': [inPrefLabel, lenPrefLabel, inSynonym, lenSynonym, inDefinition, lenDefinition, freq, totDocLength, totSubject], 'OPB01': [ ... ],...},'term1': {...}, ... }
         inv_index = {}
         for key, value in dataObo.items():
@@ -284,19 +282,19 @@ class IndexAnnotation(GeneralNLIMED):
                                     objId)]][7] += len(termFreq)
                                 objFreq[idx_id_object[str(objId)]][8] += 1
                 inv_index[term] = objFreq
-        self._dumpJson(inv_index, 'inv_index')
+        self._dumpJson(inv_index, 'indexes/inv_index')
 
     def __developInvertedIndexBM(self):
         # load map class and obolibrary features from file
-        dataClasses = self._loadJson('BM_mapClass.json')
-        idx_object_id = self._loadJson('BM_object.json')
+        dataClasses = self._loadJson('indexes/BM_mapClass.json')
+        idx_object_id = self._loadJson('indexes/BM_object.json')
         idx_id_object = {idObj: objText for objText,
                          idObj in idx_object_id.items()}
         print("indexes have been extracted")
         # load sbj-obj from file
         idx_sbj_obj = {}
         idx_sbjobj_tracks = {}
-        rdfPath = self._loadBinaryInteger("BM_rdfPaths")
+        rdfPath = self._loadBinaryInteger("indexes/BM_rdfPaths")
         print("subjecs, tracks, objects have been loaded")
         for i in range(0, len(rdfPath), 3):
             sbj, track, obj = rdfPath[i], rdfPath[i + 1], rdfPath[i + 2]
@@ -374,15 +372,15 @@ class IndexAnnotation(GeneralNLIMED):
                       (count, len(idx_sbj_obj)))
 
         # save inverted index index
-        self._dumpJson(inv_index, 'BM_inv_index')
+        self._dumpJson(inv_index, 'indexes/BM_inv_index')
         # save selected (subject,path,object) index
         selected = []
         for sbjobj, tracks in selected_sbj_track_obj.items():
             for track in tracks:
                 selected += [sbjobj[0], track, sbjobj[1]]
         print("%d %d" % (len(selected_sbj_track_obj), len(selected)))
-        self._saveBinaryInteger(selected, 'BM_selected_rdfPaths')
+        self._saveBinaryInteger(selected, 'indexes/BM_selected_rdfPaths')
         # select obj
         selected_id_obj = {
             objId: idx_id_object[objId] for objId in objWithHttp}
-        self._dumpJson(selected_id_obj, 'BM_selected_object.json')
+        self._dumpJson(selected_id_obj, 'indexes/BM_selected_object.json')

@@ -2,7 +2,7 @@
 import itertools
 from pprint import pformat
 from textwrap import indent
-from Settings import *
+from NLIMED.Settings import *
 
 
 class SPARQLGenerator(GeneralNLIMED):
@@ -16,26 +16,26 @@ class SPARQLGenerator(GeneralNLIMED):
 
     def __initPMR(self):  # initialisation of PMR
         self.idxs = {}
-        self.idxs['idx_object_id'] = self._loadJson('idx_object_id')
-        self.idxs['idx_subject_id'] = self._loadJson('idx_subject_id')
-        self.idxs['idx_obj_sbj'] = self._loadJson('idx_obj_sbj')
-        self.idxs['idx_sbjobj_tracks'] = self._loadJson('idx_sbjobj_tracks')
-        self.idxs['idx_id_track'] = self._loadJson('idx_id_track')
-        self.idxs['idx_id_pred'] = self._loadJson('idx_id_pred')
-        self.idxs['idx_pref_ns'] = self._loadJson('idx_pref_ns')
-        self.idxs['idx_id_object'] = self._loadJson('idx_id_object')
-        self.idxs['idx_id_subject'] = self._loadJson('idx_id_subject')
+        self.idxs['idx_object_id'] = self._loadJson('indexes/idx_object_id')
+        self.idxs['idx_subject_id'] = self._loadJson('indexes/idx_subject_id')
+        self.idxs['idx_obj_sbj'] = self._loadJson('indexes/idx_obj_sbj')
+        self.idxs['idx_sbjobj_tracks'] = self._loadJson('indexes/idx_sbjobj_tracks')
+        self.idxs['idx_id_track'] = self._loadJson('indexes/idx_id_track')
+        self.idxs['idx_id_pred'] = self._loadJson('indexes/idx_id_pred')
+        self.idxs['idx_pref_ns'] = self._loadJson('indexes/idx_pref_ns')
+        self.idxs['idx_id_object'] = self._loadJson('indexes/idx_id_object')
+        self.idxs['idx_id_subject'] = self._loadJson('indexes/idx_id_subject')
         # initialized based query for each subject
         self.header = 'SELECT ?graph ?Model_entity ?desc WHERE { GRAPH ?graph { '
         self.tail = ' OPTIONAL{?Model_entity <http://purl.org/dc/terms/description> ?desc .} }}'
 
     def __initBM(self):  # initialisation of BioModels
         self.idxs = {}
-        self.idxs['id_object'] = self._loadJson('BM_selected_object.json')
+        self.idxs['id_object'] = self._loadJson('indexes/BM_selected_object.json')
         self.idxs['obj_sbj'] = {}
         self.idxs['sbjobj_track'] = {}
-        self.idxs['id_track'] = self._loadJson('BM_track.json')
-        rdfPath = self._loadBinaryInteger("BM_selected_rdfPaths")
+        self.idxs['id_track'] = self._loadJson('indexes/BM_track.json')
+        rdfPath = self._loadBinaryInteger("indexes/BM_selected_rdfPaths")
         for i in range(0, len(rdfPath), 3):
             sbj, track, obj = rdfPath[i], rdfPath[i + 1], rdfPath[i + 2]
             self.idxs['obj_sbj'][obj] = self.idxs['obj_sbj'][obj] if obj in self.idxs['obj_sbj'] else set()

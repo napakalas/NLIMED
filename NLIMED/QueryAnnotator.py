@@ -1,16 +1,16 @@
 """MODUL: ANNOTATION"""
 import nltk
-from nltk.parse.corenlp import CoreNLPServer
 from nltk.tokenize import RegexpTokenizer
 import urllib.request
 from nltk.parse.corenlp import CoreNLPParser
 import operator
 import math
 import string
-from Settings import *
-
+from NLIMED.Settings import *
+from nltk.parse.corenlp import CoreNLPServer
 
 class Annotator(GeneralNLIMED):
+
     def __init__(self, **settings):
         super(Annotator, self).__init__()
         # setting multipliers values (alpha, betha, gamma, delta)
@@ -20,11 +20,11 @@ class Annotator(GeneralNLIMED):
         self.m_mention = settings['delta'] if 'delta' in settings else 0.8
         self.topConsider = settings['pl'] if 'pl' in settings else 1
         if settings['repo'] == 'pmr':
-            self.inv_index = self._loadJson('inv_index')
-            self.idx_id_object = self._loadJson('idx_id_object')
+            self.inv_index = self._loadJson('indexes/inv_index')
+            self.idx_id_object = self._loadJson('indexes/idx_id_object')
         elif settings['repo'] == 'bm':
-            self.inv_index = self._loadJson('BM_inv_index')
-            self.idx_id_object = self._loadJson('BM_selected_object.json')
+            self.inv_index = self._loadJson('indexes/BM_inv_index')
+            self.idx_id_object = self._loadJson('indexes/BM_selected_object.json')
         self.totSubject = len(self.idx_id_object)
 
     def __getPossibleObo(self, phrase):
@@ -168,34 +168,34 @@ class Annotator(GeneralNLIMED):
 
 
 class StanfordAnnotator(Annotator):
-    serverIsStarted = False
 
     def __init__(self, **settings):
         super(StanfordAnnotator, self).__init__(**settings)
-        STANFORD = os.path.join(os.path.abspath("."), "stanford-corenlp-full-2018-10-05")
-        coreNLPFile = os.path.join(STANFORD, "stanford-corenlp-3.9.2.jar")
-        modelFile = os.path.join(STANFORD, "stanford-english-corenlp-2018-10-05-models.jar")
-        self.server = CoreNLPServer(coreNLPFile, modelFile,)
-
-        if StanfordAnnotator.serverIsStarted == False:
-            # check whether the http server is up or not
+        try:
+            connectionStatus = urllib.request.urlopen("http://localhost:9000").getcode()
+            if connectionStatus == 200:
+                print('Stanford server has been started')
+        except:
             try:
-                connectionStatus = urllib.request.urlopen(
-                    "http://localhost:9000").getcode()
-                if connectionStatus == 200:
-                    print('Server has been started')
-                    StanfordAnnotator.serverIsStarted = True
+                print('Please wait, try to start Stanford server')
+                core, model = self.__getCoreAndModel()
+                self.server = CoreNLPServer(core, model,)
+                self.server.start()
+                print('Starting server is succeed')
             except:
-                try:
-                    # Start the server in the background
-                    self.server.start()
-                    StanfordAnnotator.serverIsStarted = True
-                except:
-                    print('Server can not be started')
+                print('Stanford server cannot be started, use another parser {stanford, nltk}')
 
-    def stopServer(self):
-        self.server.stop()
-        StanfordAnnotator.serverIsStarted = False
+    def __getCoreAndModel(self):
+        import os
+        for file in os.listdir(self.corenlp_home):
+            if file.startswith("stanford-corenlp") and file.endswith("models.jar"):
+                model = os.path.join(self.corenlp_home, file)
+            if file.startswith("stanford-corenlp") and not any(suff in file for suff in ["models.jar","javadoc.jar","sources.jar"]):
+                core = os.path.join(self.corenlp_home, file)
+        try:
+            return core,model
+        except:
+            print("Files core or model are not found")
 
     def getTree(self, query):
         query = query.translate(str.maketrans(
@@ -264,8 +264,8 @@ class OBOLIBAnnotator(Annotator):
     def annotate(self, query):
         r = requests.get(self.__server + query)
         results = r.json()
+        selects = []
         if len(results) > 0:
-            selects = []
             for i in range(len(results)):
                 res = results[i]
                 oboId = res['annotatedClass']['@id']
