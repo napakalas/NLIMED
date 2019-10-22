@@ -98,7 +98,7 @@ Here is the process inside NLIMED converting natural language query (NLQ) and SP
   - NLQ is parsed using selected parser (Stanford, NLTK, or NCBO), resulting candidate noun phrases (CNPs).
   - Measuring association level of each CNP to ontologies. The measurement utilises four type of textual features, i.e. preferred label, synonym, description, and local definition by this formula:
 
-    ![Image](https://github.com/napakalas/NLIMED/tree/master/resource/Eq-NLIMED.gif?raw=true)
+    ![Image](https://raw.githubusercontent.com/napakalas/NLIMED/master/resource/Eq-NLIMED.gif?raw=true)
 
     where:
     - <code>p<sub>i</sub>, s<sub>i</sub>, and d<sub>i</sub></code> are the present (1) or the absent (0) of term in preffered label, synonym, and definition consecutively.
