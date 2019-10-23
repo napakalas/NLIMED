@@ -6,6 +6,29 @@ dictArgs = {'repo': ['pmr', 'bm', 'all'], 'parser': ['stanford', 'nltk', 'ncbo']
             'show': ['models', 'sparql', 'annotation', 'verbose'], 'pl': 1,
             'alpha':4, 'beta':0.7, 'gamma':0.5, 'delta':0.8}
 dictArgsMandatory = {'repo','parser'}
+
+def config(apikey, corenlp_home):
+    import json
+    import os.path
+    currentPath = os.path.dirname(os.path.realpath(__file__))
+    file = os.path.join(currentPath,"config.txt")
+    data = {"apikey":apikey,"corenlp-home":corenlp_home}
+    with open(file, 'w') as fp:
+        json.dump(data, fp)
+
+def getConfig():
+    import json
+    import os.path
+    currentPath = os.path.dirname(os.path.realpath(__file__))
+    file = os.path.join(currentPath,"config.txt")
+    isExist = os.path.exists(file)
+    if isExist:
+        with open(file, 'r') as fp:
+            data = json.load(fp)
+        return data
+    else:
+        return {"apikey":"","corenlp-home":""}
+
 class NLIMED:
     """
     NLIMED: Natural Language Interface Model Entities Discovery

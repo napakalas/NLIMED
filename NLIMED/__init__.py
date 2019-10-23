@@ -28,11 +28,16 @@ Distributed and Licensed under the GNU GENERAL PUBLIC LICENSE, Version 3,
 which is included by reference.
 """
 
-__license__ = "GNU GENERAL PUBLIC LICENSE, Version 3    "
+__license__ = "License :: OSI Approved :: GNU General Public License (GPL)"
 
 from NLIMED.NLIMED import NLIMED
+from NLIMED.NLIMED import getConfig, config
+import os
+import nltk
 
-# # Executed when call from terminal on console
-# if len(sys.argv)>1:
-#     import NLIMED.console as con
-#     con.runTerminal()
+#check nltk_data availability, download if not available
+__required_nltk_data__ = ['stopwords','averaged_perceptron_tagger']
+__available_nltk_data__ = [] + os.listdir( nltk.data.find("corpora")) + os.listdir( nltk.data.find("taggers") )
+for __required__ in __required_nltk_data__:
+    if __required__ not in __available_nltk_data__:
+        nltk.download(__required__)

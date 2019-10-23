@@ -48,41 +48,48 @@ NLIMED implements Stanford Parser, NLTK Parser, and NCBO parser. You may select 
       - a folder   : stanford-corenlp-full-2018-10-05
 
   * **Configuring Stanford and NCBO parsers**
-    If you intent to implement NLTK only, you don't need to configure. This configuration is for Stanford and NCBO parsers. Call NLIMED from terminal or command prompt using this syntax:
-    ```
-    NLIMED --config --apikey {your-ncbo-api-key} --corenlp-home {CoreNLP-folder-full-path}
-    ```
-    As an example if your NCBO apikey is "fc5d5241-1e8e-4b44-b401-310ca39573f6" and your CoreNLP folder is "/path/stanford-corenlp-full-2018-10-05/", the call will be:
-    ```
-    NLIMED --config --apikey "fc5d5241-1e8e-4b44-b401-310ca39573f6" --corenlp-home "/Users/user1/Documents/Stanford NLP/stanford-corenlp-full-2018-10-05/"
-    ```
+    If you intent to implement NLTK only, you don't need to configure. NLIMED configuration is needed for Stanford and NCBO parsers.
+    - Configuration using command prompt or terminal, use this syntax:
+
+      ```
+      NLIMED --config --apikey {your-ncbo-api-key} --corenlp-home {CoreNLP-folder-full-path}
+      ```
+      As an example if your NCBO apikey is "fc5d5241-1e8e-4b44-b401-310ca39573f6" and your CoreNLP folder is "/path/stanford-corenlp-full-2018-10-05/", the call will be:
+      ```
+      NLIMED --config --apikey "fc5d5241-1e8e-4b44-b401-310ca39573f6" --corenlp-home "/Users/user1/Documents/Stanford NLP/stanford-corenlp-full-2018-10-05/"
+      ```
+    - Configuration usin python code, example:
+
+      ```python
+      from NLIMED import config
+      config(apikey='fc5d5241-1e8e-4b44-b401-310ca39573f6', corenlp_home='/Users/user1/Documents/Stanford NLP/stanford-corenlp-full-2018-10-05/')
+      ```
+      Show configuration:
+      ```python
+      from NLIMED import getConfig
+      getConfig()
+      ```
 
 ## Issues
-1. In a case that all NLTK modules are not completely downloaded, the following error  may appear:
 
-    ```
-    ...
-    Attempted to load taggers/averaged_perceptron_tagger/averaged_perceptron_tagger.pickle
-    ...
-    ```
-    try to install the missing modules by running:
-
-    ```
-    $ nltk.download()
-    ```
-
-2. When using Stanford parser, you may find the following error message:
+1. When using Stanford parser, you may find the following error message:
 
     ```
     ...
     requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=9000): Max retries exceeded with url: /?properties=%7B%22outputFormat%22%3A+%22json%22%2C+%22annotators%22%3A+%22tokenize%2Cpos%2Clemma%2Cssplit%2Cparse%22%2C+%22ssplit.eolonly%22%3A+%22true%22%2C+%22tokenize.whitespace%22%3A+%22false%22%7D (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x00000215465682B0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))
     ```
-    This problem usually caused by the slow start of local CoreNLP web services. The services are not completely started when the NLIMED try to utilise these. You can wait for a minute then rerun your command or code.
+    The possible cause is:
+    - You are not properly configure CoreNLP folder. Please recheck the correct location and then rerun the configuration command.
+    - In some devices, CoreNLP local web services is slowly started, so it is not ready when utise by NLIMED. You can wait for a minute then rerun your command or code.
+
+    Alternative solution solution:
     You may also start the services manually on command line or terminal. Go to your CoreNLP folder and run:
     ```
     java -mx4g -cp "*" edu.stanford.nlp.pipeline.StanfordCoreNLPServer -port 9000 -timeout 15000
     ```
     Then check the services availability on your web browser through link: http://localhost:9000/
+
+2. Any other issues please follow [issues](https://github.com/napakalas/NLIMED/issues).
 
 ## Experiment
 We conducted an experiment to measure NLIMED performance in term of:
