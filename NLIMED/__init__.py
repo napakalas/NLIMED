@@ -36,8 +36,14 @@ import os
 import nltk
 
 #check nltk_data availability, download if not available
+__required_nltk_group__ = ['taggers','corpora']
 __required_nltk_data__ = ['stopwords','averaged_perceptron_tagger']
-__available_nltk_data__ = [] + os.listdir( nltk.data.find("corpora")) + os.listdir( nltk.data.find("taggers") )
+__available_nltk_data__ = []
+for __group__ in __required_nltk_group__:
+    try:
+        __available_nltk_data__ += os.listdir( nltk.data.find(__group__))
+    except:
+        pass
 for __required__ in __required_nltk_data__:
     if __required__ not in __available_nltk_data__:
         nltk.download(__required__)

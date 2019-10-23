@@ -183,7 +183,7 @@ class StanfordAnnotator(Annotator):
                 self.server.start()
                 print('Starting server is succeed')
             except:
-                print('Stanford server cannot be started, use another parser {stanford, nltk}')
+                print('Stanford server cannot be started, use another parser {nltk,ncbo}')
 
     def __getCoreAndModel(self):
         import os

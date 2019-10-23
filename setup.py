@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 setuptools.setup(
     name='NLIMED',
-    version='0.1.1',
+    version='0.0.1',
     author="Yuda Munarko",
     author_email="yuda.munarko@gmail.com",
     description="Natural Language Interface for Model Entity Discovery (NLIMED) is an interface to search model entities in the biosimulation models in repositories. ",
