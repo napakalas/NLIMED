@@ -81,11 +81,12 @@ NLIMED implements Stanford Parser, NLTK Parser, and NCBO parser. You may select 
     The possible cause is:
     - You are not properly configure CoreNLP folder. Please recheck the correct location and then rerun the configuration command.
     - In some devices, CoreNLP local web services is slowly started, so it is not ready when utise by NLIMED. You can wait for a minute then rerun your command or code.
+    - In Windows the JVM maximum memory space is between 1500 and 1600 MB, while CoreNLP is ideally run on 4GB heap memory space.
 
-    Alternative solution solution:
+    Solution:
     You may also start the services manually on command line or terminal. Go to your CoreNLP folder and run:
     ```
-    java -mx4g -cp "*" edu.stanford.nlp.pipeline.StanfordCoreNLPServer -port 9000 -timeout 15000
+    java -Xmx4g -cp "*" edu.stanford.nlp.pipeline.StanfordCoreNLPServer -port 9000 -timeout 15000
     ```
     Then check the services availability on your web browser through link: http://localhost:9000/
 
@@ -102,26 +103,29 @@ You can get the [experiment](https://github.com/napakalas/NLIMED/tree/master/exp
 ## How NLIMED works?
 Here is the process inside NLIMED converting natural language query (NLQ) and SPARQL and then retrieving model entities from biomodel repositories:
 1. NLQ Annotation -- Annotating NLQ to ontologies
-  - NLQ is parsed using selected parser (Stanford, NLTK, or NCBO), resulting candidate noun phrases (CNPs).
-  - Measuring association level of each CNP to ontologies. The measurement utilises four type of textual features, i.e. preferred label, synonym, description, and local definition by this formula:
+
+    - NLQ is parsed using selected parser (Stanford, NLTK, or NCBO), resulting candidate noun phrases (CNPs).
+    - Measuring association level of each CNP to ontologies. The measurement utilises four type of textual features, i.e. preferred label, synonym, description, and local definition by this formula:
 
     ![Image](https://raw.githubusercontent.com/napakalas/NLIMED/master/resource/Eq-NLIMED.gif?raw=true)
 
     where:
-    - <code>p<sub>i</sub>, s<sub>i</sub>, and d<sub>i</sub></code> are the present (1) or the absent (0) of term in preffered label, synonym, and definition consecutively.
-    - <code>f<sub>i</sub></code> is the number of term in description.
-    - <code>lp<sub>i</sub>, ls<sub>i</sub>, ld<sub>i</sub>, and lf<sub>i</sub></code> are the number of terms in preffered label, synonym, definition, and description consecutively.
-    - <code>nt</code> is the number of terms in a phrase
-    - <code>N</code> is the number of ontologies having the term
-    - <code>S</code> is the number of model entities in the collection.
-    - <code>ts<sub>i</sub></code> is the number of model entities having the term
-    - <code>&alpha;, &beta;, &gamma;, and &delta;</code> are multipliers to set the features importance level. The multipliers values are decided empirically based on the repositories.
+      - <code>p<sub>i</sub>, s<sub>i</sub>, and d<sub>i</sub></code> are the present (1) or the absent (0) of term in preffered label, synonym, and definition consecutively.
+      - <code>f<sub>i</sub></code> is the number of term in description.
+      - <code>lp<sub>i</sub>, ls<sub>i</sub>, ld<sub>i</sub>, and lf<sub>i</sub></code> are the number of terms in preffered label, synonym, definition, and description consecutively.
+      - <code>nt</code> is the number of terms in a phrase
+      - <code>N</code> is the number of ontologies having the term
+      - <code>S</code> is the number of model entities in the collection.
+      - <code>ts<sub>i</sub></code> is the number of model entities having the term
+      - <code>&alpha;, &beta;, &gamma;, and &delta;</code> are multipliers to set the features importance level. The multipliers values are decided empirically based on the repositories.
 
-  - Select CNPs with highest association, having longest term, and not overlapping with other CNP. The selected CNPs should cover all terms in NLQ.
-  - Select the top pl of ontologies from selected CNPs
-  - Combine all possible ontologies with no overlapping CNPs
+    - Select CNPs with highest association, having longest term, and not overlapping with other CNP. The selected CNPs should cover all terms in NLQ.
+    - Select the top pl of ontologies from selected CNPs
+    - Combine all possible ontologies with no overlapping CNPs
+
 2. SPARQL Generation
-  - Construct SPARQLs for each ontotology combinations
+    - Construct SPARQLs for each ontotology combinations
+
 3. Retrieve model entities by sending each SPARQLs to model repository SPARQL endpoints.
 
 ## Running NLIMED from console (query to get model entities)
@@ -560,7 +564,9 @@ NLIMED --build-index pmr
 ```
 
 ### Indexing biomodels
+1. Download all [RDF files](ftp://ftp.ebi.ac.uk/pub/databases/RDF/biomodels/r31/biomodels-rdf.tar.bz2) as a compressed file from BioModels. Extract the compressed file at your convenience directory.
 
-```
-NLIMED --build-index bm
-```
+2. Run the following code:
+    ```
+    NLIMED --build-index bm "{location-of-RDF-files}"
+    ```

@@ -51,62 +51,46 @@ def setupSystem():
         print("  example: $ NLIMED --config --apikey {your-ncbo-api-key} --corenlp-home {CoreNLP-folder}")
 
 def buildIndex():
-    repo = sys.argv[-1]
+    repo = sys.argv[2]
     if repo in ['pmr','bm']:
         from NLIMED.RDFGraphIndex import  IndexSPARQL
         from NLIMED.TextFeatureIndex import IndexAnnotation
         idxSparql = IndexSPARQL(repo)
-        idxSparql.buildIndex('-build')
+        idxSparql.buildIndex(*sys.argv)
         # create Index ANNOTATION and inverted index
         idxAnnotation = IndexAnnotation(repo)
         idxAnnotation.collectClassAttributes()
         idxAnnotation.developInvertedIndex()
     else:
         print("  error indexing")
-        print("  pmr: $ NLIMED --corenlp-home pmr")
-        print("  bm : $ NLIMED --corenlp-home bm")
+        print("  pmr: $ NLIMED --build-index pmr")
+        print('  bm : $ NLIMED --build-index bm {location-of-RDF-files}')
 
 def getArguments():
-    dictArgs = {'repo': ['pmr', 'bm', 'all'], 'parser': ['stanford', 'nltk', 'ncbo'],
-                'show': ['models', 'sparql', 'annotation', 'verbose'], 'pl': 1,
-                'alpha': 4, 'beta': 0.7, 'gamma': 0.5, 'delta': 0.8}
-    dictArgsMandatory = {'repo', 'parser'}
+    from NLIMED import __dictArgsOptional__, __dictArgsMandatory__, __dictDefArgsVal__
     parser = argparse.ArgumentParser()
     parser.add_argument('-r', '--repo', required=True,
-                        help='repository name', choices=dictArgs['repo'])
+                        help='repository name', choices=__dictArgsMandatory__['repo'])
     parser.add_argument('-p', '--parser', required=True,
-                        help='parser tool', choices=dictArgs['parser'])
-
+                        help='parser tool', choices=__dictArgsMandatory__['parser'])
     def query_type(x):
         if x.strip() == 0:
             raise argparse.ArgumentTypeError("Query should contain words")
         return x
     parser.add_argument('-q', '--query', required=True,
                         help='query -- any text containing words', type=query_type)
-
-    def pl_type(x):
-        x = int(x)
-        if x < 1:
-            raise argparse.ArgumentTypeError("Minimum bandwidth is 1")
-        return x
     parser.add_argument(
-        '-pl', default=dictArgs['pl'], help='precision level, >=1', type=pl_type)
+        '-pl', default=__dictDefArgsVal__['pl'], help='precision level, >=1', type=__dictArgsOptional__['pl'])
     parser.add_argument(
-        '-s', '--show', default=dictArgs['show'][0], help='results presentation type ', choices=dictArgs['show'])
-
-    def multiply_type(x):
-        x = float(x)
-        if x >= 0:
-            return x
-        raise argparse.ArgumentTypeError("Minimum multiplier is 0")
+        '-s', '--show', default=__dictDefArgsVal__['show'][0], help='results presentation type ', choices=__dictArgsOptional__['show'])
     parser.add_argument(
-        '-a', '--alpha', default=dictArgs['alpha'], help='Minimum alpha is 0', type=multiply_type)
+        '-a', '--alpha', default=__dictDefArgsVal__['alpha'], help='Minimum alpha is 0', type=__dictArgsOptional__['alpha'])
     parser.add_argument(
-        '-b', '--beta', default=dictArgs['beta'], help='Minimum beta is 0', type=multiply_type)
+        '-b', '--beta', default=__dictDefArgsVal__['beta'], help='Minimum beta is 0', type=__dictArgsOptional__['beta'])
     parser.add_argument(
-        '-g', '--gamma', default=dictArgs['gamma'], help='Minimum gamma is 0', type=multiply_type)
+        '-g', '--gamma', default=__dictDefArgsVal__['gamma'], help='Minimum gamma is 0', type=__dictArgsOptional__['gamma'])
     parser.add_argument(
-        '-d', '--delta', default=dictArgs['delta'], help='Minimum delta is 0', type=multiply_type)
+        '-d', '--delta', default=__dictDefArgsVal__['delta'], help='Minimum delta is 0', type=__dictArgsOptional__['delta'])
     args = vars(parser.parse_args())
-    args['console'] = True
+    args['quite'] = False
     return(args)

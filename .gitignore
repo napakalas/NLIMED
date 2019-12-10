@@ -7,3 +7,7 @@ test.py
 /NLIMED.egg-info/
 /build/
 /dist/
+/NLIMED/indexes/BM_entityTypes
+/NLIMED/indexes/BM_object.json
+/NLIMED/indexes/BM_rdfPaths
+/NLIMED/indexes/BM_subject.json

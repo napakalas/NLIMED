@@ -14,14 +14,14 @@ from NLIMED.Settings import *
 class IndexSPARQL(GeneralNLIMED):
     def __init__(self, repository):
         super(IndexSPARQL, self).__init__()
-        self.isUpdate = True if 'update' not in args else args['update']
+        # self.isUpdate = True if 'update' not in args else args['update']
         self.repository = repository
 
     def buildIndex(self, *args):
         if self.repository == 'pmr':
             self.__buildIndexPMR(*args)
         elif self.repository == 'bm':
-            self.__buildIndexBM()
+            self.__buildIndexBM(*args)
 
     def __buildIndexPMR(self, *args):
         # ALL PATHS IN cellml
@@ -78,7 +78,7 @@ class IndexSPARQL(GeneralNLIMED):
             print('-skip {option} ==> update skip step')
             return
 
-    def __buildIndexBM(self):
+    def __buildIndexBM(self, *args):
         """GET SEQUENCE ON PATH BETWEEN THE MOST LEFT SUBJECT AND THE MOST RIGHT OBJECT"""
         def getSbjObjPaths(tree):
             children = tree.getchildren()
@@ -93,13 +93,12 @@ class IndexSPARQL(GeneralNLIMED):
             else:
                 objects = []
                 for child in children:
-                    objAndPaths = self.getSbjObjPaths(child)
+                    objAndPaths =   getSbjObjPaths(child)
                     for objAndPath in objAndPaths:
                         tag = child.tag.replace('{', '').replace('}', '')
                         objAndPath['p'].insert(0, tag)
                     objects += objAndPaths
                 return objects
-
         def getAllRdfs():
             seconds = time.time()
             dictMainSubjects = {}
@@ -109,7 +108,7 @@ class IndexSPARQL(GeneralNLIMED):
             entityTypes = set()
 
             count = 0
-            path = './BioModels_RDF/'
+            path = args[-1]
             cellmlPaths = []
             threads = []
             # r=root, d=directories, f = files
@@ -154,6 +153,7 @@ class IndexSPARQL(GeneralNLIMED):
             print("Seconds since epoch =", time.time() - seconds)
             return cellmlPaths
         getAllRdfs()
+
 
     def getAllUrlContents(self):
         links = self._loadJson('indexes/listOfLinks.json')

@@ -13,7 +13,7 @@ class IndexAnnotation(GeneralNLIMED):
         if self.repository == 'pmr':
             self.__initPMR()
         elif self.repository == 'bm':
-            self.__buildIndexBM()
+            self.__initBM()
 
     def __initPMR(self):
         apikey = '?apikey='+self.apikey
@@ -23,7 +23,7 @@ class IndexAnnotation(GeneralNLIMED):
             'CHEBI': oboUrl + 'CHEBI/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FCHEBI_{id}' + apikey,
             'PR': oboUrl + 'PR/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FPR_{id}' + apikey,
             'GO': oboUrl + 'GO/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FGO_{id}' + apikey,
-            'OPB': oboUrl + 'classes/http%3A%2F%2Fbhi.washington.edu%2FOPB%23OPB_{id}' + apikey,
+            'OPB': oboUrl + 'OPB/classes/http%3A%2F%2Fbhi.washington.edu%2FOPB%23OPB_{id}' + apikey,
             'FMA': oboUrl + 'FMA/classes/http%3A%2F%2Fpurl.org%2Fsig%2Font%2Ffma%2Ffma{id}' + apikey,
             'CL': oboUrl + 'CL/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FCL_{id}' + apikey,
             'UBERON': oboUrl + 'UBERON/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FUBERON_{id}' + apikey
@@ -33,27 +33,27 @@ class IndexAnnotation(GeneralNLIMED):
         apikey = '?apikey='+self.apikey
         oboUrl = self.oboUrl
         self.ontoServers = {
-            'SO': oboUrl + 'SO/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FSO_{$id}+' + apikey,
-            'SBO': oboUrl + 'SBO/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FSBO_{$id}' + apikey,
-            'PW': oboUrl + 'PW/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FPW_{$id}' + apikey,
-            'MOD': oboUrl + 'PSIMOD/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FMOD_{$id}' + apikey,
-            'PR': oboUrl + 'PR/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FGO_{$id}' + apikey,
-            'PATO': oboUrl + 'PATO/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FPATO_{$id}' + apikey,
+            'SO': oboUrl + 'SO/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FSO_{id}+' + apikey,
+            'PW': oboUrl + 'PW/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FPW_{id}' + apikey,
+            'MOD': oboUrl + 'PSIMOD/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FMOD_{id}' + apikey,
+            'PR': oboUrl + 'PR/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FPR_{id}' + apikey,
+            'PATO': oboUrl + 'PATO/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FGO_{id}' + apikey, #PATO is the same as GO
             'OPB': oboUrl + 'OPB/classes/http%3A%2F%2Fbhi.washington.edu%2FOPB%23OPB_{id}' + apikey,
-            'NCBITAXON': oboUrl + 'NCBITAXON/classes/http%3A%2F%2Fpurl.bioontology.org%2Fontology%2FNCBITAXON%2F{$id}' + apikey,
-            'MAMO': oboUrl + 'MAMO/classes/http%3A%2F%2Fidentifiers.org%2Fmamo%2FMAMO_{$id}' + apikey,
-            'GO': oboUrl + 'GO/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FGO_{id}' + apikey,
+            'NCBITAXON': oboUrl + 'NCBITAXON/classes/http%3A%2F%2Fpurl.bioontology.org%2Fontology%2FNCBITAXON%2F{id}' + apikey,
+            'MAMO': oboUrl + 'MAMO/classes/http%3A%2F%2Fidentifiers.org%2Fmamo%2FMAMO_{id}' + apikey,
+            'GO': oboUrl + 'GO/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FGO_{id}' + apikey, #GO is the same as PATO
             'FMA': oboUrl + 'FMA/classes/http%3A%2F%2Fpurl.org%2Fsig%2Font%2Ffma%2Ffma{id}' + apikey,
-            'EFO': oboUrl + 'EFO/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FIAO__{$id}' + apikey,
-            'EDAM': oboUrl + 'EDAM/classes/http%3A%2F%2Fedamontology.org%2Fdata_{$id}' + apikey,
-            'ECO': oboUrl + 'ECO/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FECO_{$id}' + apikey,
+            'EFO': oboUrl + 'EFO/classes/http%3A%2F%2Fwww.ebi.ac.uk%2Fefo%2FEFO_{id}' + apikey,
+            'EDAM': oboUrl + 'EDAM/classes/http%3A%2F%2Fedamontology.org%2Fdata_{id}' + apikey,
+            'ECO': oboUrl + 'ECO/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FECO_{id}' + apikey,
             'CL': oboUrl + 'CL/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FCL_{id}' + apikey,
             'CHEBI': oboUrl + 'CHEBI/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FCHEBI_{id}' + apikey,
-            'BTO': oboUrl + 'BTO/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FBTO_{$id}' + apikey,
-            'UNIPROT': 'https://www.uniprot.org/uniprot/{$id}.txt',
-            'KEGG': 'http://rest.kegg.jp/get/{$id}',
-            'EC-CODE': 'ftp://ftp.ebi.ac.uk/pub/databases/intenz/xml/ASCII/EC_5/EC_5.4/EC_5.4.2/EC_{$id}.xml',
-            'ENSEMBL': 'https://rest.ensembl.org/lookup/id/{$id}?content-type=application/json'
+            'BTO': oboUrl + 'BTO/classes/http%3A%2F%2Fpurl.obolibrary.org%2Fobo%2FBTO_{id}' + apikey,
+            'SBO': 'https://www.ebi.ac.uk/ols/api/ontologies/SBO/terms/http%253A%252F%252Fbiomodels.net%252FSBO%252FSBO_{id}',
+            'UNIPROT': 'https://www.uniprot.org/uniprot/{id}.txt',
+            'KEGG': 'http://rest.kegg.jp/get/{id}',
+            'EC-CODE': 'ftp://ftp.ebi.ac.uk/pub/databases/intenz/xml/ASCII/EC_5/EC_5.4/EC_5.4.2/EC_{id}.xml',
+            'ENSEMBL': 'https://rest.ensembl.org/lookup/id/{id}?content-type=application/json'
         }
         self.ontoMap = {'so': 'SO',
                         'biomodels.sbo': 'SBO',
@@ -147,6 +147,7 @@ class IndexAnnotation(GeneralNLIMED):
         self._dumpJson(mapClass, os.path.join(self.idxPath,'mapClass.json'))
 
     def __collectClassAttributesBM(self):
+        self.idx_object = self._loadJson('indexes/BM_object.json')
         totObject = len(self.idx_object)
         count = 0
         found = 0
@@ -291,6 +292,7 @@ class IndexAnnotation(GeneralNLIMED):
         idx_id_object = {idObj: objText for objText,
                          idObj in idx_object_id.items()}
         print("indexes have been extracted")
+
         # load sbj-obj from file
         idx_sbj_obj = {}
         idx_sbjobj_tracks = {}
@@ -314,10 +316,8 @@ class IndexAnnotation(GeneralNLIMED):
 
         # extract obolibrary features for each class
         def extractFeature(value, featName, indexPos):
-            featVal = value[featName] if type(value[featName]) is list else [
-                value[featName]]
-            feature = {
-                word for words in featVal for word in self.stopAndToken(words)}
+            featVal = value[featName] if type(value[featName]) is list else [value[featName]]
+            feature = {word for words in featVal if words is not None for word in self.stopAndToken(words)}
             for term in feature:
                 for objId in value['link']:
                     link = idx_id_object[objId]

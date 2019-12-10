@@ -14,11 +14,11 @@ class Annotator(GeneralNLIMED):
     def __init__(self, **settings):
         super(Annotator, self).__init__()
         # setting multipliers values (alpha, betha, gamma, delta)
-        self.m_prefDef = settings['alpha'] if 'alpha' in settings else 4
-        self.m_synonym = settings['beta'] if 'beta' in settings else 0.7
-        self.m_definition = settings['gamma'] if 'gamma' in settings else 0.5
-        self.m_mention = settings['delta'] if 'delta' in settings else 0.8
-        self.topConsider = settings['pl'] if 'pl' in settings else 1
+        self.alpha = settings['alpha']
+        self.beta = settings['beta']
+        self.gamma = settings['gamma']
+        self.delta = settings['delta']
+        self.topConsider = settings['pl']
         if settings['repo'] == 'pmr':
             self.inv_index = self._loadJson('indexes/inv_index')
             self.idx_id_object = self._loadJson('indexes/idx_id_object')
@@ -51,12 +51,12 @@ class Annotator(GeneralNLIMED):
                         (val[6], val[7], val[8])] if key in w_mention else [(val[6], val[7], val[8])]
         for oboId in w_prefDef:
             candidate[oboId] = sum(
-                self.m_prefDef * app / (ln + numOfToken) for app, ln in w_prefDef[oboId])
-            candidate[oboId] += sum(self.m_synonym * app / (ln + numOfToken)
+                self.alpha * app / (ln + numOfToken) for app, ln in w_prefDef[oboId])
+            candidate[oboId] += sum(self.beta * app / (ln + numOfToken)
                                     for app, ln in w_synonym[oboId])
-            candidate[oboId] += sum(self.m_definition * app / (ln + numOfToken) /
+            candidate[oboId] += sum(self.gamma * app / (ln + numOfToken) /
                                     lnInv for app, ln, lnInv in w_definition[oboId])
-            candidate[oboId] += sum(self.m_mention * freq / (docLen + numOfToken) * math.log(
+            candidate[oboId] += sum(self.delta * freq / (docLen + numOfToken) * math.log(
                 self.totSubject / (self.totSubject - totSbj)) for freq, docLen, totSbj in w_mention[oboId])
         phrase = " ".join(map(str, phrase))
         candidate = sorted(candidate.items(),
@@ -151,12 +151,15 @@ class Annotator(GeneralNLIMED):
         else:
             return []
 
-    def printAnnotated(self, result):
-        print(result['phrases'])
-        for pairs in result['result']:
-            for pair in pairs[0]:
-                print('\t' + str(pair))
-            print('\t' + str(pairs[1]))
+    def setWeighting(self, alpha, beta, gamma, delta, pl):
+        self.alpha = alpha
+        self.beta = beta
+        self.gamma = gamma
+        self.delta = delta
+        self.topConsider = pl
+
+    def getWeighting(self):
+        return {'alpha':self.alpha,'beta':self.beta,'gamma':self.gamma,'delta':self.delta,'pl': self.topConsider}
 
     @abstractmethod
     def annotate(self, tree):
@@ -174,7 +177,10 @@ class StanfordAnnotator(Annotator):
         try:
             connectionStatus = urllib.request.urlopen("http://localhost:9000").getcode()
             if connectionStatus == 200:
-                print('Stanford server has been started')
+                if 'quite' not in settings:
+                    print('Stanford server has been started')
+                elif not settings['quite']:
+                    print('Stanford server has been started')
         except:
             try:
                 print('Please wait, try to start Stanford server')

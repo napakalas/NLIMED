@@ -35,15 +35,38 @@ from NLIMED.NLIMED import getConfig, config
 import os
 import nltk
 
-#check nltk_data availability, download if not available
-__required_nltk_group__ = ['taggers','corpora']
-__required_nltk_data__ = ['stopwords','averaged_perceptron_tagger']
+# check nltk_data availability, download if not available
+__required_nltk_group__ = ['taggers', 'corpora']
+__required_nltk_data__ = ['stopwords', 'averaged_perceptron_tagger']
 __available_nltk_data__ = []
 for __group__ in __required_nltk_group__:
     try:
-        __available_nltk_data__ += os.listdir( nltk.data.find(__group__))
+        __available_nltk_data__ += os.listdir(nltk.data.find(__group__))
     except:
         pass
 for __required__ in __required_nltk_data__:
     if __required__ not in __available_nltk_data__:
         nltk.download(__required__)
+
+# standard arguments for NLIMED setup
+
+
+def __pl_type__(x):
+    x = int(x)
+    if x >= 1:
+        return x
+    raise ValueError("Minimum precision level is 1")
+
+def __multiply_type__(x):
+    x = float(x)
+    if x >= 0:
+        return x
+    raise ValueError("Minimum multiplier is 0")
+
+__dictArgsMandatory__ = {'repo': ['pmr', 'bm', 'all'], 'parser': ['stanford', 'nltk', 'ncbo']}
+__dictArgsOptional__ = {'show': ['models', 'sparql', 'annotation', 'verbose'], 'pl': __pl_type__,
+                        'alpha': __multiply_type__, 'beta': __multiply_type__, 'gamma': __multiply_type__,
+                        'delta': __multiply_type__, 'quite': False}
+__dictDefArgsVal__ = {'repo': __dictArgsMandatory__['repo'][0], 'parser': __dictArgsMandatory__['parser'][0],
+                      'show': __dictArgsOptional__['show'], 'pl': 1,
+                      'alpha': 4, 'beta': 0.7, 'gamma': 0.5, 'delta': 0.8, 'quite': False}

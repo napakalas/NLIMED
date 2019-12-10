@@ -2,11 +2,6 @@ import sys
 from NLIMED.QueryAnnotator import StanfordAnnotator, NLTKAnnotator, OBOLIBAnnotator
 from NLIMED.SPARQLGenerator import SPARQLGenerator
 
-dictArgs = {'repo': ['pmr', 'bm', 'all'], 'parser': ['stanford', 'nltk', 'ncbo'],
-            'show': ['models', 'sparql', 'annotation', 'verbose'], 'pl': 1,
-            'alpha':4, 'beta':0.7, 'gamma':0.5, 'delta':0.8}
-dictArgsMandatory = {'repo','parser'}
-
 def config(apikey, corenlp_home):
     import json
     import os.path
@@ -46,7 +41,7 @@ class NLIMED:
 
             nlimed = NLIMED(repo='bm', parser='nltk', pl=2)
 
-            nlimed = NLIMED(repo='bm', parser='nltk', pl=3, alpha=2, beta=0.2, gamma=0.2, delta=0.3)
+            nlimed = NLIMED(repo='bm', parser='nltk', pl=3, alpha=2, beta=0.2, gamma=0.2, delta=0.3, quite=True)
 
         Attributes:
             repo {'pmr','bm'} (mandatory): the repository name, pmr for the Physiome Model Repository or bm for the BioModels.
@@ -63,6 +58,8 @@ class NLIMED:
 
             delta (float) (>=0) (optional) : the multiplier of description feature
 
+            quiet (boolean) (optional) : set to not print unnecessary message
+
         Functions:
             getModels(query, format):
 
@@ -73,50 +70,64 @@ class NLIMED:
             getVerbose(query, format)
     """
     def __init__(self, **vargs):
-        isArgsValid = self.__isArgsValid(**vargs)
-        if isArgsValid:
-            try:
-                if vargs['parser'] == 'stanford':
-                    self.annotator = StanfordAnnotator(**vargs)
-                elif vargs['parser'] == 'nltk':
-                    self.annotator = NLTKAnnotator(**vargs)
-                elif vargs['parser'] == 'ncbo':
-                    self.annotator = OBOLIBAnnotator(**vargs)
-            except:
-                print("  Error: cannot instantiate annotator, try other parser {stanford, nltk, ncbo}")
-                sys.exit(2)
-            self.sparqlGen = SPARQLGenerator(vargs['repo'])
-        else:
-            sys.exit(2)
+        vargs = self.__getValidArgs(**vargs)
+        try:
+            if vargs['parser'] == 'stanford':
+                self.annotator = StanfordAnnotator(**vargs)
+            elif vargs['parser'] == 'nltk':
+                self.annotator = NLTKAnnotator(**vargs)
+            elif vargs['parser'] == 'ncbo':
+                self.annotator = OBOLIBAnnotator(**vargs)
+        except:
+            raise Error("  Error: cannot instantiate annotator, try other parser {stanford, nltk, ncbo}")
+        self.sparqlGen = SPARQLGenerator(vargs['repo'])
 
-    def __isArgsValid(self, **vargs):
-        """Check wheteher the arguments provided to create NLIMED instance are appropriate and correct
+    def __getValidArgs(self, **vargs):
         """
+        Check wheteher the arguments provided to create NLIMED instance are appropriate and correct
+        """
+        from NLIMED import __dictArgsOptional__, __dictArgsMandatory__, __dictDefArgsVal__
         def __showErrorMessage():
-            print(" error in calling getModelEntities(**vargs) function")
-            print(" arguments are not complete or values are not correct")
-            print("   - repo {%s}" % ','.join(map(str, dictArgs["repo"])))
-            print("   - parser {%s}" % ','.join(map(str, dictArgs["parser"])))
-            print("   - [pl  PL>1]")
-            print("   - [alpha a>=0]")
-            print("   - [beta b>=0]")
-            print("   - [gamma g>=0]")
-            print("   - [delta d>=0]")
-            print(" example:")
-            print("   minimum call: ")
-            print("     NLIMED(repo='pmr', parser='stanford')")
-            print("   complete call: ")
-            print(
-                "     NLIMED(repo='pmr', parser='stanford', pl=1, alpha=4, beta=0.7, gamma=0.5, delta=0.8)")
-        if all(key in vargs.keys() for key in dictArgsMandatory):
-            for key in dictArgsMandatory:
-                if vargs[key] not in dictArgs[key]:
-                    __showErrorMessage()
-                    return False
-            return True
+            return """
+            arguments are not complete or values are not correct
+              - repo ['pmr','bm']
+              - parser ['stanford.','nltk','ncbo']
+              - [pl  PL>1]
+              - [alpha a>=0]
+              - [beta b>=0]
+              - [gamma g>=0]
+              - [delta d>=0]
+              - [quite boolean]
+            example:
+              minimum call:
+                NLIMED(repo='pmr', parser='stanford')
+              complete call:
+                NLIMED(repo='pmr', parser='stanford', pl=1, alpha=4, beta=0.7, gamma=0.5, delta=0.8, quite=True)
+            """
+        if all(key in vargs.keys() for key in __dictArgsMandatory__):
+            # check mandatory arguments
+            for key in __dictArgsMandatory__:
+                if vargs[key] not in __dictArgsMandatory__[key]:
+                    raise ValueError(__showErrorMessage())
+            # check optional arguments
+            for key in __dictArgsOptional__:
+                # check value
+                if key in vargs:
+                    if isinstance(__dictArgsOptional__[key], list):
+                        if vargs[key] not in __dictArgsOptional__[key]:
+                            raise ValueError(__showErrorMessage())
+                    elif isinstance(__dictArgsOptional__[key], bool):
+                        if not isinstance(vargs[key],bool):
+                            raise ValueError(__showErrorMessage())
+                    else:
+                        vargs[key] = __dictArgsOptional__[key](vargs[key])
+                # use default value if not available
+                else:
+                    vargs[key] = __dictDefArgsVal__[key]
+            return vargs
+
         else:
-            __showErrorMessage()
-            return False
+            raise ValueError(__showErrorMessage())
 
     def getModels(self, query, format):
         """
@@ -240,3 +251,9 @@ class NLIMED:
         modelList = self.getModels(query, format)
         if format == 'json':
             return {'annotated': annotated, 'sparql': sparqlList, 'models': modelList}
+
+    def setWeighting(self, alpha, beta, gamma, delta, pl):
+        self.annotator.setWeighting(alpha,beta,gamma,delta,pl)
+
+    def getWeighting(self):
+        return self.annotator.getWeighting()

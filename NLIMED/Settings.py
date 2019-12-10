@@ -54,16 +54,16 @@ class GeneralNLIMED(ABC):
         except:
             return []
 
-    def _saveBinaryInteger(self, data, filename):
+    def _saveBinaryInteger(self, data, fileName):
         import struct
         file = os.path.join(self.currentPath,fileName)
         with open(file, "wb") as f:
             for x in data:
                 f.write(struct.pack('i', x))  # 4bytes
 
-    def _loadBinaryInteger(self, filename):
+    def _loadBinaryInteger(self, fileName):
         import struct
-        file = os.path.join(self.currentPath,filename)
+        file = os.path.join(self.currentPath,fileName)
         with open(file, 'rb') as f:
             bdata = []
             while True:
