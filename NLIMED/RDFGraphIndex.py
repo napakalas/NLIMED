@@ -142,28 +142,28 @@ class IndexSPARQL(GeneralNLIMED):
                                     dictTracks[track] = idTrack
                                 idTrack = dictTracks[track]
                                 cellmlPaths += [idSubj, idTrack, idObj]
-            self._saveBinaryInteger(cellmlPaths, 'indexes/BM_rdfPaths')
-            self._dumpJson(dictMainSubjects, 'indexes/BM_subject.json')
-            self._dumpJson(dictObjects, 'indexes/BM_object.json')
+            self._saveBinaryInteger(cellmlPaths, 'indexes','BM_rdfPaths')
+            self._dumpJson(dictMainSubjects, 'indexes','BM_subject.json')
+            self._dumpJson(dictObjects, 'indexes','BM_object.json')
             # modify trac so it store --> idTrack, [track]
             reverseDictTracks = {value: list(key)
                                  for key, value in dictTracks.items()}
-            self._dumpJson(reverseDictTracks, 'indexes/BM_track.json')
-            self._dumpJson(list(entityTypes), 'indexes/BM_entityTypes')
+            self._dumpJson(reverseDictTracks, 'indexes','BM_track.json')
+            self._dumpJson(list(entityTypes), 'indexes','BM_entityTypes')
             print("Seconds since epoch =", time.time() - seconds)
             return cellmlPaths
         getAllRdfs()
 
 
     def getAllUrlContents(self):
-        links = self._loadJson('indexes/listOfLinks.json')
-        data = self._loadJson('indexes/cellMlData.json')
+        links = self._loadJson('indexes','listOfLinks.json')
+        data = self._loadJson('indexes','cellMlData.json')
         for link, isUpdate in links.items():
             if bool(isUpdate):
                 text = requests.get(link).text
                 data[link] = text
         print(len(data))
-        self._dumpJson(data, 'indexes/cellMlData.json')
+        self._dumpJson(data, 'indexes','cellMlData.json')
 
     # GET ALL cellml LINK FROM PROVIDED GRAPH
     def getCellmlLinks(self, url):
@@ -184,10 +184,8 @@ class IndexSPARQL(GeneralNLIMED):
 
     # GET ALL cellml LINK FROM PMR WEBSITE
     def getAllCellmlLink(self):
-        fileName = 'indexes/listOfLinks.json'
         # check available link
-        listLinks = {link: False for link in self._loadJson(
-            fileName)} if self.isUpdate else {}
+        listLinks = {link: False for link in self._loadJson('indexes','listOfLinks.json')} if self.isUpdate else {}
         # get all graphs
         __queryGraph = """ SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s ?p ?o }}"""
         sparqlendpoint = 'https://models.physiomeproject.org/pmr2_virtuoso_search'
@@ -203,7 +201,7 @@ class IndexSPARQL(GeneralNLIMED):
                         currLinks = self.getCellmlLinks(graph['value'])
                         for link in currLinks:
                             listLinks[link] = True if link not in listLinks else False
-        self._dumpJson(listLinks, fileName)
+        self._dumpJson(listLinks, 'indexes', 'listOfLinks.json')
         print('Number of cellml and rdf links with rdf is %d' % len(listLinks))
 
     # GET SEQUENCE ON PATH BETWEEN THE MOST LEFT SUBJECT AND THE MOST RIGHT OBJECT
@@ -232,7 +230,7 @@ class IndexSPARQL(GeneralNLIMED):
 
     # BUILD OF SIMPLIFIED RDF TRIPPLETS FROM GIVEN url
     def getAllRdfs(self):
-        cellMlData = self._loadJson('indexes/cellMlData.json')
+        cellMlData = self._loadJson('indexes','cellMlData.json')
         cellmlPaths = []
         for cellmlLink, content in cellMlData.items():
             try:
@@ -271,7 +269,7 @@ class IndexSPARQL(GeneralNLIMED):
                                      'namespaces': namespaces, 'paths': paths}]
             except:
                 print("RDF format error: %s" % cellmlLink)
-        self._dumpJson(cellmlPaths, 'indexes/rdfPaths.json')
+        self._dumpJson(cellmlPaths, 'indexes','rdfPaths.json')
         return cellmlPaths
 
     def getNameSpaceAndVal(self, uri):
@@ -303,7 +301,7 @@ class IndexSPARQL(GeneralNLIMED):
 
     def createIndexPrefix(self):
         # create index of prefix and namespace
-        data = self._loadJson('indexes/rdfPaths.json')
+        data = self._loadJson('indexes','rdfPaths.json')
         index_pref_ns = {}  # {pref0:ns0, pref1:ns1, ...}
         index_ns_pref = {}  # {ns0:pref0, ns1:pref1, ...}
         list_namespaces = []
@@ -322,13 +320,13 @@ class IndexSPARQL(GeneralNLIMED):
         for i in range(len(list_namespaces)):
             index_pref_ns[i] = list_namespaces[i]
             index_ns_pref[list_namespaces[i]] = i
-        self._dumpJson(index_pref_ns, 'indexes/idx_pref_ns')
-        self._dumpJson(index_ns_pref, 'indexes/idx_ns_pref')
+        self._dumpJson(index_pref_ns, 'indexes','idx_pref_ns')
+        self._dumpJson(index_ns_pref, 'indexes','idx_ns_pref')
 
     def createIndexPredicate(self):
         # create index of predicate
-        data = self._loadJson('indexes/rdfPaths.json')
-        index_ns_pref = self._loadJson('indexes/idx_ns_pref')
+        data = self._loadJson('indexes','rdfPaths.json')
+        index_ns_pref = self._loadJson('indexes','idx_ns_pref')
         # {predId0:(pref0,val0), predId1:(pref1,val1), ...}
         index_predi_pred = {}
         # {(pref0,val0):predId0, (pref1,val1):predId1, ...}
@@ -348,17 +346,17 @@ class IndexSPARQL(GeneralNLIMED):
         print('# of distinct predicate %d' % len(list_predicate))
         for i in range(len(list_predicate)):
             index_predi_pred[i] = list_predicate[i]
-        self._dumpJson(index_predi_pred, 'indexes/idx_id_pred')
+        self._dumpJson(index_predi_pred, 'indexes','idx_id_pred')
         # save predicate to file
-        index_pref_ns = self._loadJson('indexes/idx_pref_ns')
+        index_pref_ns = self._loadJson('indexes','idx_pref_ns')
         myPredList = []
         for myPred in list_predicate:
             myPredList += [index_pref_ns[str(myPred[0])] + myPred[1]]
-        self._saveToFlatFile(myPredList, 'indexes/listOfPredicates.txt')
+        self._saveToFlatFile(myPredList, 'indexes','listOfPredicates.txt')
 
     def createIndexObjectAndSubject(self):
         # create index of object and index of subject
-        data = self._loadJson('indexes/rdfPaths.json')
+        data = self._loadJson('indexes','rdfPaths.json')
         index_object_oi = {}  # {obj0:objId0,obj1:objId1,...}
         index_oi_object = {}  # {objId0:obj0,objId1:obj1,...}
         index_subject_si = {}  # {sbj0:sbjId0,sbj1:sbjId1,...}
@@ -381,24 +379,24 @@ class IndexSPARQL(GeneralNLIMED):
             index_si_subject[i] = list_subject[i]
         print('# of distinct object %d' % len(index_object_oi))
         print('# of distinct subject %d' % len(index_si_subject))
-        self._dumpJson(index_oi_object, 'indexes/idx_id_object')
-        self._dumpJson(index_object_oi, 'indexes/idx_object_id')
-        self._dumpJson(index_si_subject, 'indexes/idx_id_subject')
-        self._dumpJson(index_subject_si, 'indexes/idx_subject_id')
+        self._dumpJson(index_oi_object, 'indexes','idx_id_object')
+        self._dumpJson(index_object_oi, 'indexes','idx_object_id')
+        self._dumpJson(index_si_subject, 'indexes','idx_id_subject')
+        self._dumpJson(index_subject_si, 'indexes','idx_subject_id')
         # save obj to file
-        self._saveToFlatFile(list_object, 'indexes/listOfObjects.txt')
+        self._saveToFlatFile(list_object, 'indexes','listOfObjects.txt')
         # save sbj to file
-        self._saveToFlatFile(list_subject, 'indexes/listOfSubjects.txt')
+        self._saveToFlatFile(list_subject, 'indexes','listOfSubjects.txt')
 
     def restructureRdfPath(self):
         # restructured cellmlPaths so it only contains id, not full text
         # cellMlPath=['link':cellmlurl, 'namespace':[ns0,ns1,...] 'paths':[{'s':s0,'o':o0,'p':[p0]},{'s':s1,'o':o1,'p':[p1]},...,{'s':s2,'o':o2,'p':[p2]}]]
         # res_cellMlPaths = [[sbjId0,objId0,[predId00,predId01,...]] ... [sbjIdn,objIdn,[predIdn0,predIdn1,...]]]
-        data = self._loadJson('indexes/rdfPaths.json')
-        index_object_oi = self._loadJson('indexes/idx_object_id')
-        index_subject_si = self._loadJson('indexes/idx_subject_id')
-        index_ns_pref = self._loadJson('indexes/idx_ns_pref')
-        index_id_pred = self._loadJson('indexes/idx_id_pred')
+        data = self._loadJson('indexes','rdfPaths.json')
+        index_object_oi = self._loadJson('indexes','idx_object_id')
+        index_subject_si = self._loadJson('indexes','idx_subject_id')
+        index_ns_pref = self._loadJson('indexes','idx_ns_pref')
+        index_id_pred = self._loadJson('indexes','idx_id_pred')
         index_pred_predi = {}
         for key, val in index_id_pred.items():
             index_pred_predi[tuple(val)] = key
@@ -416,11 +414,11 @@ class IndexSPARQL(GeneralNLIMED):
                     pred_ids += [pred_id]
                 restructuredPaths += [[sbj_id, obj_id, tuple(pred_ids)]]
         print('# of path %d' % len(restructuredPaths))
-        self._dumpJson(restructuredPaths, 'indexes/restructureRdfPath.json')
+        self._dumpJson(restructuredPaths, 'indexes','restructureRdfPath.json')
 
     def createIndexTrack(self):
         # create index of track
-        data = self._loadJson('indexes/restructureRdfPath.json')
+        data = self._loadJson('indexes','restructureRdfPath.json')
         # {trackId0:[predId00,predId01,...],trackId1:[predId10,predId11,...], ...}
         index_tracki_track = {}
         list_track = []
@@ -431,17 +429,17 @@ class IndexSPARQL(GeneralNLIMED):
             index_tracki_track[i] = list_track[i]
         print('# of distinct track %d' % len(index_tracki_track))
         # save to index file
-        self._dumpJson(index_tracki_track, 'indexes/idx_id_track')
+        self._dumpJson(index_tracki_track, 'indexes','idx_id_track')
         # save track to file
-        self._saveToFlatFile(list_track, 'indexes/listOfTracks.txt')
+        self._saveToFlatFile(list_track, 'indexes','listOfTracks.txt')
 
     def fullyRestructureRdfPath(self):
         # restructure res_cellMlPath so it fully contain subject id, object id, and list of track id
         # res_res_cellMlPath = [[sid0,oid0,trackid0] ... [sidn,oidn,trackidn]]
         # then removing any duplicate
-        data = self._loadJson('indexes/restructureRdfPath.json')
+        data = self._loadJson('indexes','restructureRdfPath.json')
         index_track_tracki = {}
-        index_tracki_track = self._loadJson('indexes/idx_id_track')
+        index_tracki_track = self._loadJson('indexes','idx_id_track')
         for key, val in index_tracki_track.items():
             index_track_tracki[tuple(val)] = key
         fullyResPaths = []
@@ -452,11 +450,11 @@ class IndexSPARQL(GeneralNLIMED):
             fullyResPaths += [((sbj_id, obj_id), track_id)]
         fullyResPaths = list(set(fullyResPaths))
         print('# of distinct path %d' % len(fullyResPaths))
-        self._dumpJson(fullyResPaths, 'indexes/fullyRestructureRdfPath.json')
+        self._dumpJson(fullyResPaths, 'indexes','fullyRestructureRdfPath.json')
 
     def createIndexObjectSubjectPair(self):
         # create index of object=>subject, subject=>object, subject,object=>predicate
-        data = self._loadJson('indexes/fullyRestructureRdfPath.json')
+        data = self._loadJson('indexes','fullyRestructureRdfPath.json')
         # {idObj0:[idSbj01,idSbj02,...], idObj1:[idSbj11,idSbj12,...]}
         index_obj_sbj = {}
         # {idSbj0:[idObj01,idObj02,...], idSbj1:[idObj11,idObj12,...]}
@@ -482,9 +480,9 @@ class IndexSPARQL(GeneralNLIMED):
                 index_sbjobj_tracks[key] = index_sbjobj_tracks[key] + [listTrack]
         print('# of distinct subject-object pair %d' %
               len(index_sbjobj_tracks))
-        self._dumpJson(index_obj_sbj, 'indexes/idx_obj_sbj')
-        self._dumpJson(index_sbj_obj, 'indexes/idx_sbj_obj')
+        self._dumpJson(index_obj_sbj, 'indexes','idx_obj_sbj')
+        self._dumpJson(index_sbj_obj, 'indexes','idx_sbj_obj')
         tmp_index_sbjobj_tracks = []
         for key, val in index_sbjobj_tracks.items():
             tmp_index_sbjobj_tracks += [[list(key), val]]
-        self._dumpJson(tmp_index_sbjobj_tracks, 'indexes/idx_sbjobj_tracks')
+        self._dumpJson(tmp_index_sbjobj_tracks, 'indexes','idx_sbjobj_tracks')

@@ -144,10 +144,10 @@ class IndexAnnotation(GeneralNLIMED):
                         content = {'link': [cls['text']], 'prefLabel': res['prefLabel'],
                                    'synonym': res['synonym'], 'definition': res['definition']}
                         mapClass[clsId] = content
-        self._dumpJson(mapClass, os.path.join(self.idxPath,'mapClass.json'))
+        self._dumpJson(mapClass,'indexes','mapClass.json')
 
     def __collectClassAttributesBM(self):
-        self.idx_object = self._loadJson('indexes/BM_object.json')
+        self.idx_object = self._loadJson('indexes','BM_object.json')
         totObject = len(self.idx_object)
         count = 0
         found = 0
@@ -172,13 +172,13 @@ class IndexAnnotation(GeneralNLIMED):
                             found += 1
                     except:
                         print("extraction error at object %d" % count)
-                        self._dumpJson(mapClass, 'indexes/BM_mapClass' +
+                        self._dumpJson(mapClass, 'indexes','BM_mapClass' +
                                        str(count) + '.json')
             count += 1
             if count % 1000 == 0:
                 print("extract %d of %d objects, found %d" %
                       (count, totObject, found))
-        self._dumpJson(mapClass, 'indexes/BM_mapClass.json')
+        self._dumpJson(mapClass, 'indexes','BM_mapClass.json')
 
     """EXTRACTING FEATURES AND BUILD INVERTED INDEX"""
 
@@ -189,9 +189,9 @@ class IndexAnnotation(GeneralNLIMED):
             self.__developInvertedIndexBM()
 
     def __developInvertedIndexPMR(self):
-        dataObo = self._loadJson('indexes/mapClass.json')
-        idx_sbj_obj = self._loadJson('indexes/idx_sbj_obj')
-        idx_id_object = self._loadJson('indexes/idx_id_object')
+        dataObo = self._loadJson('indexes','mapClass.json')
+        idx_sbj_obj = self._loadJson('indexes','idx_sbj_obj')
+        idx_id_object = self._loadJson('indexes','idx_id_object')
         # {'term0':{'OPB00': [inPrefLabel, lenPrefLabel, inSynonym, lenSynonym, inDefinition, lenDefinition, freq, totDocLength, totSubject], 'OPB01': [ ... ],...},'term1': {...}, ... }
         inv_index = {}
         for key, value in dataObo.items():
@@ -283,12 +283,12 @@ class IndexAnnotation(GeneralNLIMED):
                                     objId)]][7] += len(termFreq)
                                 objFreq[idx_id_object[str(objId)]][8] += 1
                 inv_index[term] = objFreq
-        self._dumpJson(inv_index, 'indexes/inv_index')
+        self._dumpJson(inv_index, 'indexes','inv_index')
 
     def __developInvertedIndexBM(self):
         # load map class and obolibrary features from file
-        dataClasses = self._loadJson('indexes/BM_mapClass.json')
-        idx_object_id = self._loadJson('indexes/BM_object.json')
+        dataClasses = self._loadJson('indexes','BM_mapClass.json')
+        idx_object_id = self._loadJson('indexes','BM_object.json')
         idx_id_object = {idObj: objText for objText,
                          idObj in idx_object_id.items()}
         print("indexes have been extracted")
@@ -296,7 +296,7 @@ class IndexAnnotation(GeneralNLIMED):
         # load sbj-obj from file
         idx_sbj_obj = {}
         idx_sbjobj_tracks = {}
-        rdfPath = self._loadBinaryInteger("indexes/BM_rdfPaths")
+        rdfPath = self._loadBinaryInteger('indexes','BM_rdfPaths')
         print("subjecs, tracks, objects have been loaded")
         for i in range(0, len(rdfPath), 3):
             sbj, track, obj = rdfPath[i], rdfPath[i + 1], rdfPath[i + 2]
@@ -372,15 +372,15 @@ class IndexAnnotation(GeneralNLIMED):
                       (count, len(idx_sbj_obj)))
 
         # save inverted index index
-        self._dumpJson(inv_index, 'indexes/BM_inv_index')
+        self._dumpJson(inv_index, 'indexes','BM_inv_index')
         # save selected (subject,path,object) index
         selected = []
         for sbjobj, tracks in selected_sbj_track_obj.items():
             for track in tracks:
                 selected += [sbjobj[0], track, sbjobj[1]]
         print("%d %d" % (len(selected_sbj_track_obj), len(selected)))
-        self._saveBinaryInteger(selected, 'indexes/BM_selected_rdfPaths')
+        self._saveBinaryInteger(selected, 'indexes','BM_selected_rdfPaths')
         # select obj
         selected_id_obj = {
             objId: idx_id_object[objId] for objId in objWithHttp}
-        self._dumpJson(selected_id_obj, 'indexes/BM_selected_object.json')
+        self._dumpJson(selected_id_obj, 'indexes','BM_selected_object.json')

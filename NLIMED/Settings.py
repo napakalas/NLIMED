@@ -22,8 +22,8 @@ class GeneralNLIMED(ABC):
             self.corenlp_home = "/"
         self.oboUrl = "http://data.bioontology.org/ontologies/"
 
-    def _loadJson(self, fileName):
-        file = os.path.join(self.currentPath,fileName)
+    def _loadJson(self, *paths):
+        file = os.path.join(self.currentPath,*paths)
         isExist = os.path.exists(file)
         if isExist:
             with open(file, 'r') as fp:
@@ -32,20 +32,20 @@ class GeneralNLIMED(ABC):
         else:
             return {}
 
-    def _dumpJson(self, data, fileName):
-        file = os.path.join(self.currentPath,fileName)
+    def _dumpJson(self, data, *paths):
+        file = os.path.join(self.currentPath,*paths)
         with open(file, 'w') as fp:
             json.dump(data, fp)
 
-    def _saveToFlatFile(self, data, fileName):
-        file = os.path.join(self.currentPath,fileName)
+    def _saveToFlatFile(self, data, *paths):
+        file = os.path.join(self.currentPath,*paths)
         f = open(file, 'w+')
         for datum in data:
             f.write(str(datum).replace('\n', ' ').replace('\r', ' ') + '\n')
         f.close()
 
-    def _loadFromFlatFile(self, fileName):
-        file = os.path.join(self.currentPath,fileName)
+    def _loadFromFlatFile(self, *paths):
+        file = os.path.join(self.currentPath,*paths)
         try:
             f = open(file, 'r')
             lines = f.readlines()
@@ -54,16 +54,16 @@ class GeneralNLIMED(ABC):
         except:
             return []
 
-    def _saveBinaryInteger(self, data, fileName):
+    def _saveBinaryInteger(self, data, *paths):
         import struct
-        file = os.path.join(self.currentPath,fileName)
+        file = os.path.join(self.currentPath,*paths)
         with open(file, "wb") as f:
             for x in data:
                 f.write(struct.pack('i', x))  # 4bytes
 
-    def _loadBinaryInteger(self, fileName):
+    def _loadBinaryInteger(self, *paths):
         import struct
-        file = os.path.join(self.currentPath,fileName)
+        file = os.path.join(self.currentPath,*paths)
         with open(file, 'rb') as f:
             bdata = []
             while True:

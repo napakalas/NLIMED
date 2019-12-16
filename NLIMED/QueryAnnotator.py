@@ -20,11 +20,11 @@ class Annotator(GeneralNLIMED):
         self.delta = settings['delta']
         self.topConsider = settings['pl']
         if settings['repo'] == 'pmr':
-            self.inv_index = self._loadJson('indexes/inv_index')
-            self.idx_id_object = self._loadJson('indexes/idx_id_object')
+            self.inv_index = self._loadJson('indexes','inv_index')
+            self.idx_id_object = self._loadJson('indexes','idx_id_object')
         elif settings['repo'] == 'bm':
-            self.inv_index = self._loadJson('indexes/BM_inv_index')
-            self.idx_id_object = self._loadJson('indexes/BM_selected_object.json')
+            self.inv_index = self._loadJson('indexes','BM_inv_index')
+            self.idx_id_object = self._loadJson('indexes','BM_selected_object.json')
         self.totSubject = len(self.idx_id_object)
 
     def __getPossibleObo(self, phrase):
