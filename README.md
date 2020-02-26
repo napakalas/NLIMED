@@ -560,7 +560,7 @@ All indexes are already provided in this project. However, if you want to recrea
 ### Indexing the pmr
 
 ```
-NLIMED --build-index pmr
+NLIMED --build-index pmr "{location-of-ontology-files}"
 ```
 
 ### Indexing biomodels
@@ -568,5 +568,5 @@ NLIMED --build-index pmr
 
 2. Run the following code:
     ```
-    NLIMED --build-index bm "{location-of-RDF-files}"
+    NLIMED --build-index bm "{location-of-ontology-files}" "{location-of-RDF-files}"
     ```

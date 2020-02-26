@@ -1,6 +1,6 @@
 import sys
-from NLIMED.QueryAnnotator import StanfordAnnotator, NLTKAnnotator, OBOLIBAnnotator
-from NLIMED.SPARQLGenerator import SPARQLGenerator
+from NLIMED.query_annotator import StanfordAnnotator, NLTKAnnotator, OBOLIBAnnotator
+from NLIMED.sparql_generator import SPARQLGenerator
 
 def config(apikey, corenlp_home):
     import json

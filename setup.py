@@ -22,6 +22,7 @@ setuptools.setup(
     install_requires=[
         'nltk',
         'SPARQLWrapper',
+        'pandas',
         ],
     entry_points = {
         "console_scripts": [

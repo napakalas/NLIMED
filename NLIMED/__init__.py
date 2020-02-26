@@ -49,8 +49,6 @@ for __required__ in __required_nltk_data__:
         nltk.download(__required__)
 
 # standard arguments for NLIMED setup
-
-
 def __pl_type__(x):
     x = int(x)
     if x >= 1:
@@ -69,4 +67,4 @@ __dictArgsOptional__ = {'show': ['models', 'sparql', 'annotation', 'verbose'], '
                         'delta': __multiply_type__, 'quite': False}
 __dictDefArgsVal__ = {'repo': __dictArgsMandatory__['repo'][0], 'parser': __dictArgsMandatory__['parser'][0],
                       'show': __dictArgsOptional__['show'], 'pl': 1,
-                      'alpha': 4, 'beta': 0.7, 'gamma': 0.5, 'delta': 0.8, 'quite': False}
+                      'alpha': 0.4, 'beta': 0.1, 'gamma': 1.0, 'delta': 1.0, 'quite': False}

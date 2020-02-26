@@ -52,19 +52,20 @@ def setupSystem():
 
 def buildIndex():
     repo = sys.argv[2]
+    ontologies = sys.argv[3]
     if repo in ['pmr','bm']:
-        from NLIMED.RDFGraphIndex import  IndexSPARQL
-        from NLIMED.TextFeatureIndex import IndexAnnotation
-        idxSparql = IndexSPARQL(repo)
-        idxSparql.buildIndex(*sys.argv)
+        from NLIMED.rdf_graph_index import  IndexSPARQL
+        from NLIMED.text_feature_index import IndexAnnotation
+        # idxSparql = IndexSPARQL(repo)
+        # idxSparql.buildIndex(*sys.argv)
         # create Index ANNOTATION and inverted index
-        idxAnnotation = IndexAnnotation(repo)
+        idxAnnotation = IndexAnnotation(repo, ontologies)
         idxAnnotation.collectClassAttributes()
         idxAnnotation.developInvertedIndex()
     else:
         print("  error indexing")
-        print("  pmr: $ NLIMED --build-index pmr")
-        print('  bm : $ NLIMED --build-index bm {location-of-RDF-files}')
+        print('  pmr: $ NLIMED --build-index pmr "{location-of-ontology-files}"')
+        print('  bm : $ NLIMED --build-index bm "{location-of-ontology-files}" "{location-of-RDF-files}"')
 
 def getArguments():
     from NLIMED import __dictArgsOptional__, __dictArgsMandatory__, __dictDefArgsVal__
