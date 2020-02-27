@@ -60,7 +60,7 @@ def buildIndex():
         # idxSparql.buildIndex(*sys.argv)
         # create Index ANNOTATION and inverted index
         idxAnnotation = IndexAnnotation(repo, ontologies)
-        idxAnnotation.collectClassAttributes()
+        # idxAnnotation.collectClassAttributes()
         idxAnnotation.developInvertedIndex()
     else:
         print("  error indexing")

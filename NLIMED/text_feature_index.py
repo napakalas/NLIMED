@@ -20,17 +20,15 @@ class IndexAnnotation(GeneralNLIMED):
             'PSIMOD': '{alp}_{num}',
             'PR': '{alp}_{num}',
             'PATO': '{alp}_{num}',
-            'OPB': '{alp}#{alp}_{num}',
+            'OPB': '{alp}#{num}',
             'NCBITAXON': '{num}',
-            'MAMO': '{alp}_{num}',
+            'MAMO': '{num}',
             'GO': '{alp}_{num}',
             'FMA': '{alp}{num}',
             'EFO': '{alp}_{num}',
-            'EDAM': '{alp}_{num}',
+            'EDAM': '{num}',
             'ECO': '{alp}_{num}',
             'CL': '{alp}_{num}',
-            'CHEBI': '{alp}_{num}',
-            'BTO': '{alp}_{num}',
             'SBO': '{alp}:{num}',
             'UNIPROT': '{num}',
             'KEGG': '{num}',
@@ -59,34 +57,33 @@ class IndexAnnotation(GeneralNLIMED):
                     definitions = df['Definitions'].tolist()
                     data = {}
                     for i in range(len(classIds)):
-                        classId = classIds[i][classIds[i].rfind('/')+1:].upper()
+                        classId = classIds[i][classIds[i].rfind('/')+1:].upper().strip()
                         pref = prefLabels[i] if isinstance(prefLabels[i],str) else ""
                         syn = synonims[i].split('|') if isinstance(synonims[i],str) else []
                         deff = definitions[i].split('|') if isinstance(definitions[i],str) else []
                         data[classId] = [pref, syn, deff]
                     self.ontologies[ontoName] = {'mainUrl':mainUrl, 'dataVars':['prefLabel','synonyms','definitions'], 'data':data}
-            elif file.endswith('.obo'):
-                if ontoName in self.servers:
-                    file = os.path.join(ontoFolder,file)
-                    f = open(file, 'r')
-                    lines = f.readlines()
-                    f.close()
-                    # get main url
-                    for line in lines:
-                        if 'auto-generated-by' in line:
-                            mainUrl = line[line.find('http'):-2]
-                            break
-                    # get attributes
-                    data={}
-                    for i in range(len(lines)):
-                        if lines[i] == '[Term]':
-                            classId = lines[i+1][lines[i+1].find(' ')+1:]
-                            preff = lines[i+2][lines[i+2].find(' ')+1:]
-                            syn = ''
-                            deff =  lines[i+3][lines[i+3].find(' "')+2:lines[i+3].rfind('"')]
-                            data[classId] = [pref, syn, deff]
-                            i += 4
-                    self.ontologies[ontoName] = {'mainUrl':mainUrl, 'dataVars':['prefLabel','synonyms','definitions'], 'data':data}
+            elif file.endswith('.obo') and ontoName in self.servers:
+                file = os.path.join(ontoFolder,file)
+                f = open(file, 'r')
+                lines = f.readlines()
+                f.close()
+                # get main url
+                for line in lines:
+                    if 'auto-generated-by' in line:
+                        mainUrl = line[line.find('http'):-2]
+                        break
+                # get attributes
+                data={}
+                for i in range(len(lines)):
+                    if '[Term]' in lines[i]:
+                        classId = lines[i+1][lines[i+1].find(' ')+1:].strip()
+                        preff = [lines[i+2][lines[i+2].find(' ')+1:].strip()]
+                        syn = ''
+                        deff =  [lines[i+3][lines[i+3].find(' "')+2:lines[i+3].rfind('"')].strip()]
+                        data[classId] = [preff, syn, deff]
+                        i += 4
+                self.ontologies[ontoName] = {'mainUrl':mainUrl, 'dataVars':['prefLabel','synonyms','definitions'], 'data':data}
 
     def __initPMR(self, ontoFolder):
         self.servers = {'MA','CHEBI','PR','GO','OPB','FMA','CL','UBERON'}
@@ -95,38 +92,37 @@ class IndexAnnotation(GeneralNLIMED):
     def __initBM(self, ontoFolder):
         self.servers = {'SO','PW','PSIMOD','PR','PATO','OPB','NCBITAXON','MAMO',
                         'FMA','EFO','EDAM','ECO','CL','CHEBI','BTO','SBO',
-                        'UNIPROT','KEGG','EC-CODE','ENSEMBL','GO'}
+                        'UNIPROT','KEGG','EC-CODE','ENSEMBL','GO','MA'}
         self.__loadOntologyClasses(ontoFolder)
-        self.ontoMap = {'so': 'SO',
-                        'biomodels.sbo': 'SBO',
-                        'sbo': 'SBO',
-                        'pw': 'PW',
-                        'obo.pw': 'PW',
-                        'psimod': 'MOD',
-                        'obo.psi-mod': 'MOD',
-                        'pr': 'PR',
-                        'pato': 'PATO',
-                        'obo.pato': 'PATO',
-                        'opb': 'OPB',
-                        'taxonomy': 'NCBITAXON',
-                        'mamo': 'MAMO',
-                        'go': 'GO',
-                        'obo.go': 'GO',
-                        'www.geneontology.org': 'GO',
+        self.ontoMap = {'SO': 'SO',
+                        'BIOMODELS.SBO': 'SBO',
+                        'SBO':'SBO',
+                        'PW': 'PW',
+                        'OBO.PW': 'PW',
+                        'MOD': 'MOD',
+                        'OBO.PSI-MOD': 'MOD',
+                        'PSIMOD':'MOD',
+                        'PR': 'PR',
+                        'PATO': 'PATO',
+                        'OBO.PATO': 'PATO',
+                        'OPB': 'OPB',
+                        'TAXONOMY': 'NCBITAXON',
+                        'MAMO': 'MAMO',
                         'GO': 'GO',
-                        'fma': 'FMA',
-                        'obo.fma': 'FMA',
-                        'obo.FMA': 'FMA',
-                        'efo': 'EFO',
-                        'edam': 'EDAM',
-                        'eco': 'ECO',
-                        'obo.eco': 'ECO',
-                        'cl': 'CL',
-                        'chebi': 'CHEBI',
-                        'obo.chebi': 'CHEBI',
-                        'ChEBI': 'CHEBI',
-                        'bto': 'BTO',
-                        'obo.bto': 'BTO', }
+                        'OBO.GO': 'GO',
+                        'WWW.GENEONTOLOGY.ORG': 'GO',
+                        'FMA': 'FMA',
+                        'OBO.FMA': 'FMA',
+                        'EFO': 'EFO',
+                        'EDAM': 'EDAM',
+                        'ECO': 'ECO',
+                        'OBO.ECO': 'ECO',
+                        'CL': 'CL',
+                        'CHEBI': 'CHEBI',
+                        'OBO.CHEBI': 'CHEBI',
+                        'OBO.BTO': 'BTO',
+                        'BTO':'BTO',
+                        }
 
     def stopAndToken(self, text):
         stWords = stopwords.words('english')
@@ -146,13 +142,18 @@ class IndexAnnotation(GeneralNLIMED):
 
     def getClassId(self, bioClass):
         if bioClass[0:4] == 'http':
-            cls = bioClass[bioClass.rfind('/') + 1:]
+            bioClass = bioClass.upper()
+            cls = bioClass[bioClass.rfind('/') + 1:].strip()
             clsId = cls if cls.find(':') < 0 else cls[cls.find(':') + 1:]
             clsOnto = bioClass[:bioClass.rfind(
                 '/')][bioClass[:bioClass.rfind('/')].rfind('/') + 1:]
             clsOnto = cls[0:cls.find(':')] if cls.find(':') > 0 else clsOnto
             if clsOnto in self.ontoMap:
                 clsOnto = self.ontoMap[clsOnto]
+                # if any(x in bioClass.lower() for x in ['/so','/pw','/mod_', '/mod:','/pr','/pato','/opb','/mamo','/fma','/edam','/eco','/cl',]):
+                #     print(bioClass)
+                # if any(x in bioClass.lower() for x in ['edam',]):
+                #     print({'status': True, 'reg': clsOnto, 'id': clsId, 'text': bioClass})
                 return {'status': True, 'reg': clsOnto, 'id': clsId, 'text': bioClass}
         return {'status': False, 'text': bioClass}
 
@@ -190,6 +191,8 @@ class IndexAnnotation(GeneralNLIMED):
         found = 0
         mapClass = {}
         print(totObject)
+        # print(self.ontologies.keys())
+        # print(self.ontologies['CL']['data'].keys())
         for obj, objId in self.idx_object.items():
             cls = self.getClassId(obj)
             if cls['status'] is True:
@@ -198,10 +201,14 @@ class IndexAnnotation(GeneralNLIMED):
                     content = mapClass[clsId]
                     content['link'] += [objId]
                 else:
-                    id = self.ontoIdPattern[cls['reg'].upper()].replace('{num}', cls['id']).replace('{alp}',cls['reg'].upper())
-                    if id in self.ontologies[cls['reg'].upper()]['data']:
-                        checkE = id
-                        data = self.ontologies[cls['reg'].upper()]['data'][id]
+                    # if 'EDAM' in cls['reg'].upper():
+                    #     print('   ',cls['reg'].upper())
+                    ontoType = cls['reg'].upper() if cls['reg'].upper() != 'MOD' else 'PSIMOD'
+                    id = self.ontoIdPattern[ontoType].replace('{num}', cls['id']).replace('{alp}',cls['reg'].upper())
+                    # if 'EDAM' in id:
+                    #      print(id, '   ', self.ontoIdPattern[ontoType])
+                    if id in self.ontologies[ontoType]['data']:
+                        data = self.ontologies[ontoType]['data'][id]
                         content = {'link': [objId], 'prefLabel': data[0],
                                        'synonym': data[1], 'definition': data[2]}
                         mapClass[clsId] = content

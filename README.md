@@ -558,13 +558,19 @@ It is also possible to get SPARQL only without model entities. It utilise getSpa
 All indexes are already provided in this project. However, if you want to recreate all indexes you can use the following script on command prompt or terminal. Please be patient, it may take times to be finished.
 
 ### Indexing the pmr
+Download all required ontologies for indexing from (https://bioportal.bioontology.org/).
+Preferably is csv files but obo files are working.
+List of ontologies:
+'SO','PW','PSIMOD','PR','PATO','OPB','NCBITAXON','MAMO',
+'FMA','EFO','EDAM','ECO','CL','CHEBI','BTO','SBO',
+'UNIPROT','KEGG','EC-CODE','ENSEMBL','GO'
 
 ```
 NLIMED --build-index pmr "{location-of-ontology-files}"
 ```
 
 ### Indexing biomodels
-1. Download all [RDF files](ftp://ftp.ebi.ac.uk/pub/databases/RDF/biomodels/r31/biomodels-rdf.tar.bz2) as a compressed file from BioModels. Extract the compressed file at your convenience directory.
+1. Download all RDF files (ftp://ftp.ebi.ac.uk/pub/databases/RDF/biomodels/r31/biomodels-rdf.tar.bz2) as a compressed file from BioModels. Extract the compressed file at your convenience directory.
 
 2. Run the following code:
     ```

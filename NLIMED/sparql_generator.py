@@ -51,8 +51,8 @@ class SPARQLGenerator(GeneralNLIMED):
             WHERE {
                 ?model ?type ?element ."""
         # get id predicate description
-        self.whereOptional = {' OPTIONAL{?element <http://identifiers.org/biomodels.vocabulary#notes> ?notas .}  BIND(COALESCE(?notas, "s") as ?notes) ',
-                              ' OPTIONAL{?element <http://identifiers.org/biomodels.vocabulary#name> ?nama .}  BIND(COALESCE(?nama, "s") as ?name) '}
+        self.whereOptional = {' OPTIONAL{?element <http://identifiers.org/biomodels.vocabulary#notes> ?notas .}  BIND(COALESCE(?notas, "") as ?notes) ',
+                              ' OPTIONAL{?element <http://identifiers.org/biomodels.vocabulary#name> ?nama .}  BIND(COALESCE(?nama, "") as ?name) '}
 
     def constructSPARQL(self, *objs):
         if self.repository == 'pmr':

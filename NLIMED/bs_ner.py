@@ -18,6 +18,57 @@ from sklearn_crfsuite import metrics
 
 import copy
 
+def createTrainingNer(repo, ontoFolder):
+    listServers = {'pmr':['MA','CHEBI','PR','GO','OPB','FMA','CL','UBERON'],
+                   'bm':['SO','PW','PSIMOD','PR','PATO','OPB','NCBITAXON','MAMO',
+                    'FMA','EFO','EDAM','ECO','CL','CHEBI','BTO','SBO',
+                    'UNIPROT','KEGG','EC-CODE','ENSEMBL','GO']}
+    servers = listServers[repo]
+    # now we only consider csv and obo files
+    ontologies = {}
+    import pandas as pd
+    for file in os.listdir(ontoFolder):
+        ontoName = file[:file.rfind('.')]
+        if  file.endswith('.csv') and ontoName in servers:
+            file = os.path.join(ontoFolder,file)
+            df = pd.read_csv(file,sep=',',header=0)
+            pref = df['Preferred Label'].tolist()
+            synonyms = df['Synonyms'].tolist()
+            __extractNerClasses(ontologies, ontoName, pref, synonyms)
+        elif file.endswith('.obo') and ontoName in servers:
+            file = os.path.join(ontoFolder,file)
+            f = open(file, 'r')
+            lines = f.readlines()
+            f.close()
+            # get attributes
+            pref = []
+            for i in range(len(lines)):
+                if lines[i] == '[Term]':
+                    pref += [lines[i+2][lines[i+2].find(' ')+1:]]
+                    i += 4
+            __extractNerClasses(ontologies, ontoName, pref)
+
+
+def __extractNerClasses(ontologies, ontoName, *features):
+    ontologies[ontoName] = []
+    for feature in features:
+        for txts in feature:
+            try:
+                if isinstance(txts,str):
+                    txts = txts.split('|')
+                    for txt in txts:
+                        terms = txt.lower().strip().split()
+                        line = []
+                        for i in range(len(terms)):
+                            tag = 'I-'+ontoName if i==0 else 'B-'+ontoName
+                            term = __cleanTerm(terms[i])
+                            pair = (term,tag)
+                            line += [pair]
+                ontologies[ontoName] += [line]
+            except:
+                pass
+    print(ontoName, ' ', len(ontologies[ontoName]), ' ', ontologies[ontoName][0])
+
 def createSpellAndNerModels(repo, folder):
     spellTrain, spellTrainBigram, nerListTrain = {}, {}, []
     for file in os.listdir(folder):
@@ -132,29 +183,18 @@ def word2features(sent, i):
     word = sent[i][0]
     features = {
         'bias': 1.0,
-        'word.lower()': word.lower(),
-        'word.isupper()': word.isupper(),
-        'word.istitle()': word.istitle(),
         'word.isdigit()': word.isdigit(),
     }
     if i > 0:
         word1 = sent[i-1][0]
         features.update({
-            '-1:word.lower()': word1.lower(),
-            '-1:word.istitle()': word1.istitle(),
-            '-1:word.isupper()': word1.isupper(),
+            '-1:word.isdigit()': word1.isdigit(),
         })
-    else:
-        features['BOS'] = True
     if i < len(sent)-1:
         word1 = sent[i+1][0]
         features.update({
-            '+1:word.lower()': word1.lower(),
-            '+1:word.istitle()': word1.istitle(),
-            '+1:word.isupper()': word1.isupper(),
+            '+1:word.isdigit()': word1.isdigit(),
         })
-    else:
-        features['EOS'] = True
     return features #basic feature
 
 def word2features_prefsuf(sent, i): #with preffix and suffix
@@ -357,18 +397,20 @@ def spellCheker(modelFile, input_term):
                                   suggestion.count))
 
 
+# createTrainingNer('pmr','/Users/ymun794/Documents/Ontologies')
+
 # createSpellAndNerModels('pmr','/Users/ymun794/Documents/Ontologies')
 
 # spellCheker('pmr_spell_model', 'portionofcytosol')
 
-mySpellChecker = SymSpell()
-path = os.path.dirname(os.path.realpath(__file__))
+# mySpellChecker = SymSpell()
+# path = os.path.dirname(os.path.realpath(__file__))
+#
+# mySpellChecker.load_pickle(os.path.join(path,'models','pmr_spell_model'),compressed=True)
+# result = mySpellChecker.word_segmentation("plasmamembrane")
 
-mySpellChecker.load_pickle(os.path.join(path,'models','pmr_spell_model'),compressed=True)
-result = mySpellChecker.word_segmentation("plasmamembrane")
-
-# display suggestion term, term frequency, and edit distance
-print(result.corrected_string)
+# # display suggestion term, term frequency, and edit distance
+# print(result.corrected_string)
 #
 # suggestions = mySpellChecker.lookup_compound("basolateraplasmamembrane",1)
 # for suggestion in suggestions:
