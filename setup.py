@@ -23,6 +23,7 @@ setuptools.setup(
         'nltk',
         'SPARQLWrapper',
         'pandas',
+        'stanza',
         ],
     entry_points = {
         "console_scripts": [

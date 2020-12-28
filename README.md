@@ -107,7 +107,7 @@ Here is the process inside NLIMED converting natural language query (NLQ) and SP
     - NLQ is parsed using selected parser (Stanford, NLTK, or NCBO), resulting candidate noun phrases (CNPs).
     - Measuring association level of each CNP to ontologies. The measurement utilises four type of textual features, i.e. preferred label, synonym, description, and local definition by this formula:
 
-    ![Image](https://raw.githubusercontent.com/napakalas/NLIMED/master/resource/Eq-NLIMED.gif?raw=true)
+    ![Image](https://raw.githubusercontent.com/napakalas/NLIMED/master/resource/Eq-NLIMED.png?raw=true)
 
     where:
       - <code>p<sub>i</sub>, s<sub>i</sub>, and d<sub>i</sub></code> are the present (1) or the absent (0) of term in preffered label, synonym, and definition consecutively.
@@ -117,7 +117,7 @@ Here is the process inside NLIMED converting natural language query (NLQ) and SP
       - <code>N</code> is the number of ontologies having the term
       - <code>S</code> is the number of model entities in the collection.
       - <code>ts<sub>i</sub></code> is the number of model entities having the term
-      - <code>&alpha;, &beta;, &gamma;, and &delta;</code> are multipliers to set the features importance level. The multipliers values are decided empirically based on the repositories.
+      - <code>&alpha;, &beta;, &gamma; &delta;, and &theta;</code> are multipliers to set the features importance level. The multipliers values are decided empirically based on the repositories.
 
     - Select CNPs with highest association, having longest term, and not overlapping with other CNP. The selected CNPs should cover all terms in NLQ.
     - Select the top pl of ontologies from selected CNPs
@@ -137,7 +137,7 @@ then you will get:
 ```terminal
 usage: NLIMED [-h] -r {pmr,bm,all} -p {stanford,nltk,ncbo} -q QUERY
                  [-pl PL] [-s {models,sparql,annotation,verbose}] [-a ALPHA]
-                 [-b BETA] [-g GAMMA] [-d DELTA]
+                 [-b BETA] [-g GAMMA] [-d DELTA] [-t THETA]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -157,6 +157,8 @@ optional arguments:
                         Minimum gamma is 0
   -d DELTA, --delta DELTA
                         Minimum delta is 0
+  -t THETA, --theta THETA
+                        Minimum theta is 0
 ```
 Here is the description of those arguments:
 * -r {pmr,bm,all} or --repo {pmr,bm,all} (mandatory) is the name of repository. pmr is the Physiome Repository Model, bm is BioSimulations, all is for both repositories
@@ -167,14 +169,15 @@ Here is the description of those arguments:
 * -a ALPHA or --alpha ALPHA (optional) is to set up the weight of preffered label feature. Minimum alpha is 0. Default value is 4.
 * -b BETA or --beta BETA (optional) is to set up the weight of synonym feature. Minimum beta is 0. Default value is 0.7.
 -g GAMMA or --gamma GAMMA (optional) is to set up the weight of definition feature. Minimum gamma is 0. Default value is 0.5.
--d DELTA, --delta DELTA (optional) is to set up the weight of description feature. Minimum gamma is 0. Default value is 0.8.
+-d DELTA, --delta DELTA (optional) is to set up the weight of parent labels feature. Minimum gamma is 0. Default value is 0.8.
+-t THETA, --theta DELTA (optional) is to set up the weight of description feature. Minimum theta is 0. Default value is 0.01.
 
 ### Running example
 * running with minimum setup for repository = Physiome Model Repository, parser = NLTK, query = "flux of sodium", and other default arguments values:
   ```
   NLIMED -r pmr -p nltk -q "flux of sodium"
   ```
-* running with full setup for repository=BioModels, parser=Stanford, query="flux of sodium", precision level = 2, alpha = 2, beta = 1, gamma = 1, and delta = 1
+* running with full setup for repository=BioModels, parser=Stanford, query="flux of sodium", precision level = 2, alpha = 2, beta = 1, gamma = 1, and delta = 1, theta = 0.01
   ```
   NLIMED -r bm -p stanford -q "flux of sodium" -pl 2 -a 2 -b 1 -g 1 -d 1
   ```
@@ -203,8 +206,8 @@ The following codes are used to retrieve model entities from the PMR or Biomodel
 
   """
   where:
-  - repo : repository {'pmr','bm'}
-  - parser : parser tool {'stanford','nltk','ncbo'}
+  - repo : repository {'pmr', 'bm', 'bm-omex'}
+  - parser : parser tool {'stanford', 'nltk', 'stanza', 'mixed', 'ncbo'}
   - query : query text
   - format : the returning format data {'json','print'}
   """
@@ -227,22 +230,23 @@ The following codes are used to retrieve model entities from the PMR or Biomodel
   }
   ```
 
-* It also possible to increase the precision level, so NLIMED can show more results. Here we are returning model entities from the PMR using Stanford parser and precision level 2, alpha=4, beta=0.7, gamma=0.5, delta=0.8.
+* It also possible to increase the precision level, so NLIMED can show more results. Here we are returning model entities from the PMR using Stanford parser and precision level 2, alpha=4, beta=0.7, gamma=0.5, delta=0.8, theta=0.01.
   ```python
   from NLIMED import NLIMED
-  nlimed = NLIMED(repo='pmr', parser='stanford', pl=2, alpha=4, beta=0.7, gamma=0.5, delta=0.8)
+  nlimed = NLIMED(repo='pmr', parser='stanford', pl=2, alpha=4, beta=0.7, gamma=0.5, delta=0.8, theta=0.01)
   query = 'mitochondrial calcium ion transmembrane transport'
   result = nlimed.getModels(query=query,format='json')
 
   """
   where:
-  - repo (mandatory) : repository {'pmr','bm'}
-  - parser : parser tool {'stanford','nltk','ncbo'}
+  - repo (mandatory) : repository {'pmr', 'bm', 'bm-omex'}
+  - parser : parser tool {'stanford', 'nltk', 'stanza', 'mixed', 'ncbo'}
   - pl (optional) : precision level, the minimum value is 1
   - alpha (optional) : preffered label weight, the minimum value is 0
   - beta (optional) : synonym weight, the minimum value is 0
   - gamma (optional) : definition weight, the minimum value is 0
-  - delta (optional) : description weight, the minimum value is 0
+  - delta (optional) : parent labels weight, the minimum value is 0
+  - theta (optional) : description weight, the minimum value is 0
   - query : query text
   - format : the returning format data {'json','print'}
   """
@@ -406,10 +410,10 @@ The following codes are used to retrieve model entities from the PMR or Biomodel
     ]
   }
   ```
-* Get model entities from BioModels with precision level 2, alpha=4, beta=0.7, gamma=0.5, delta=0.8 and NLTK parser
+* Get model entities from BioModels with precision level 2, alpha=4, beta=0.7, gamma=0.5, delta=0.8, theta=0.01 and NLTK parser
 ```python
 from NLIMED import NLIMED
-nlimed = NLIMED(repo='bm', parser='nltk', pl=2, alpha=4, beta=0.7, gamma=0.5, delta=0.8)
+nlimed = NLIMED(repo='bm', parser='nltk', pl=2, alpha=4, beta=0.7, gamma=0.5, delta=0.8, theta=0.01)
 query = 'mitochondrial calcium ion transmembrane transport'
 result = nlimed.getModels(query=query,format='json')
 ```
@@ -450,7 +454,7 @@ In a case you just need to utilise the annotation function, you can use getAnnot
 * Code example to annotated query "concentration of potassium in the portion of tissue fluid" in the PMR using Stanford parser
   ```python
   from NLIMED import NLIMED
-  nlimed = NLIMED(repo='pmr', parser='stanford', pl=2, alpha=4, beta=0.7, gamma=0.5, delta=0.8)
+  nlimed = NLIMED(repo='pmr', parser='stanford', pl=2, alpha=4, beta=0.7, gamma=0.5, delta=0.8, theta=0.01)
   query = 'concentration of potassium in the portion of tissue fluid'
   result = nlimed.getAnnotated(query=query,format='json')
   ```
@@ -467,10 +471,10 @@ In a case you just need to utilise the annotation function, you can use getAnnot
   ```
   The query is separated into three phrases, then each phrase is classify into an ontology. There is a score 5.061734018829371 indicating the weight of ontologies combination.
 
-* Code example to annotated query "concentration of potassium in the portion of tissue fluid" in the PMR using Stanford parser, pl=2, alpha=4, beta=0.7, gamma=0.5, delta=0.8
+* Code example to annotated query "concentration of potassium in the portion of tissue fluid" in the PMR using Stanford parser, pl=2, alpha=4, beta=0.7, gamma=0.5, delta=0.8, theta=0.01
   ```python
   from NLIMED import NLIMED
-  nlimed = NLIMED(repo='pmr', parser='stanford', pl=2, alpha=4, beta=0.7, gamma=0.5, delta=0.8)
+  nlimed = NLIMED(repo='pmr', parser='stanford', pl=2, alpha=4, beta=0.7, gamma=0.5, delta=0.8, theta=0.01)
   query = 'flux of sodium'
   result = nlimed.getAnnotated(query=query,format='json')
   ```
@@ -532,10 +536,10 @@ It is also possible to get SPARQL only without model entities. It utilise getSpa
         OPTIONAL{?Model_entity <http://purl.org/dc/terms/description> ?desc .} }}'
   ]
   ```
-* Get SPARQL code for query "concentration of potassium in the portion of tissue fluid" in the PMR using Stanford parser with precision level 2, alpha=4, beta=0.7, gamma=0.5, delta=0.8 and NLTK parser
+* Get SPARQL code for query "concentration of potassium in the portion of tissue fluid" in the PMR using Stanford parser with precision level 2, alpha=4, beta=0.7, gamma=0.5, delta=0.8, theta=0.01 and NLTK parser
   ```python
   from NLIMED import NLIMED
-  nlimed = NLIMED(repo='pmr', parser='stanford', pl=2, alpha=4, beta=0.7, gamma=0.5, delta=0.8)
+  nlimed = NLIMED(repo='pmr', parser='stanford', pl=2, alpha=4, beta=0.7, gamma=0.5, delta=0.8, theta=0.01)
   query = 'flux of sodium'
   result = nlimed.getSparql(query=query,format='json')
   ```

@@ -26,7 +26,6 @@ def createTrainingNer(repo, ontoFolder):
     servers = listServers[repo]
     # now we only consider csv and obo files
     ontologies = {}
-    import pandas as pd
     for file in os.listdir(ontoFolder):
         ontoName = file[:file.rfind('.')]
         if  file.endswith('.csv') and ontoName in servers:
@@ -47,7 +46,6 @@ def createTrainingNer(repo, ontoFolder):
                     pref += [lines[i+2][lines[i+2].find(' ')+1:]]
                     i += 4
             __extractNerClasses(ontologies, ontoName, pref)
-
 
 def __extractNerClasses(ontologies, ontoName, *features):
     ontologies[ontoName] = []
@@ -324,6 +322,7 @@ def __sent2labels(sent):
 def __sent2features(sent, extractionFunction):
     return [extractionFunction(sent, i) for i in range(len(sent))]
 
+""" LOAD MODEL FROM FILE """
 
 def loadModel(localDir,fileName):
     import pickle
@@ -342,7 +341,7 @@ def getNerResult(modelFile, extractionFunction, query):
     print(y_pred)
 
 """SPELL CHECKER FUNCTION"""
-from symspellpy.symspellpy import SymSpell, Verbosity  # import the module
+from cc.symspellpy import SymSpell, Verbosity  # import the module
 
 def createAndSaveSpellingModel(spellTrain, spellTrainBigram, repo):
 
@@ -397,26 +396,31 @@ def spellCheker(modelFile, input_term):
                                   suggestion.count))
 
 
-# createTrainingNer('pmr','/Users/ymun794/Documents/Ontologies')
+createTrainingNer('pmr','/Users/ymun794/Documents/Ontologies')
 
 # createSpellAndNerModels('pmr','/Users/ymun794/Documents/Ontologies')
 
 # spellCheker('pmr_spell_model', 'portionofcytosol')
 
+# query = '(2s,3s,4r)-4-(hydroxymethyl)-1-(2-methoxy-1-oxoethyl)-3-[4-(3-pyridinyl)phenyl]-2-azetidinecarbonitr'
+#
 # mySpellChecker = SymSpell()
 # path = os.path.dirname(os.path.realpath(__file__))
-#
+# #
 # mySpellChecker.load_pickle(os.path.join(path,'models','pmr_spell_model'),compressed=True)
-# result = mySpellChecker.word_segmentation("plasmamembrane")
-
-# # display suggestion term, term frequency, and edit distance
+# result = mySpellChecker.word_segmentation(query)
 # print(result.corrected_string)
 #
-# suggestions = mySpellChecker.lookup_compound("basolateraplasmamembrane",1)
+# suggestions = mySpellChecker.lookup_compound(query,1)
 # for suggestion in suggestions:
-#     print("1. {}, {}, {}".format(suggestion.term, suggestion.distance,
+#     print("{}, {}, {}".format(suggestion.term, suggestion.distance,
 #                               suggestion.count))
-# suggestions = mySpellChecker.lookup_compound("basolateralplasmamembrane",2)
+# suggestions = mySpellChecker.lookup_compound(query,2)
 # for suggestion in suggestions:
-#     print("1. {}, {}, {}".format(suggestion.term, suggestion.distance,
+#     print("{}, {}, {}".format(suggestion.term, suggestion.distance,
+#                               suggestion.count))
+#
+# suggestions = mySpellChecker.lookup(query, Verbosity.CLOSEST, 1)
+# for suggestion in suggestions:
+#     print("{}, {}, {}".format(suggestion.term, suggestion.distance,
 #                               suggestion.count))

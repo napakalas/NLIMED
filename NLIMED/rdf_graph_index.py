@@ -23,10 +23,18 @@ class IndexSPARQL(GeneralNLIMED):
             self.__buildIndexPMR(*args)
         elif self.repository == 'bm':
             self.__buildIndexBM(*args)
-        self._copyToIndexes(['idx_object_id', 'idx_subject_id', 'idx_obj_sbj',
-                 'idx_sbjobj_tracks', 'idx_id_track', 'idx_id_pred',
-                 'idx_pref_ns', 'idx_id_subject', 'BM_track.json',
-                 'idx_id_object'])
+        elif self.repository == 'bm-omex':
+            self.__buildIndexBMOmex(*args)
+        self._copyToIndexes([self.repository + '_idx_object_id', \
+                self.repository + '_idx_subject_id', \
+                self.repository + '_idx_obj_sbj', \
+                self.repository + '_idx_sbjobj_tracks',\
+                self.repository + '_idx_id_track', \
+                self.repository + '_idx_id_pred', \
+                self.repository + '_idx_pref_ns', \
+                self.repository + '_idx_id_subject', \
+                self.repository + '_idx_id_object', \
+                self.repository + '_track.json'])
 
     def __buildIndexPMR(self, *args):
         # ALL PATHS IN cellml
@@ -105,70 +113,137 @@ class IndexSPARQL(GeneralNLIMED):
                     objects += objAndPaths
                 return objects
 
-        def getAllRdfs():
-            seconds = time.time()
-            dictMainSubjects = {}
-            dictObjects = {}
-            dictTracks = {}
-            namespaces = []
-            entityTypes = set()
+        # get all rdfs for BioModels only
+        seconds = time.time()
+        dictMainSubjects = {}
+        dictObjects = {}
+        dictPredicates = {}
+        dictTracks = {}
+        namespaces = []
+        entityTypes = set()
+        count = 0
+        path = args[-1]
+        cellmlPaths = []
+        threads = []
+        # r=root, d=directories, f = files
+        for r, d, files in os.walk(path):
+            for file in files:
+                file = os.path.join(r, file)
+                root = parse(file).getroot()
 
-            count = 0
-            path = args[-1]
-            cellmlPaths = []
-            threads = []
-            # r=root, d=directories, f = files
-            for r, d, files in os.walk(path):
-                for file in files:
-                    file = os.path.join(r, file)
-                    root = parse(file).getroot()
+                """get all main RDF subjects and path"""
+                for rdfMainSubject in root:
+                    if len(rdfMainSubject.attrib) > 0:
+                        att = list(rdfMainSubject.attrib.keys())[0]
+                        entityTypes.add(att)
+                        mainSubject = rdfMainSubject.attrib[att]
+                        # normalise subject
+                        if mainSubject not in dictMainSubjects:
+                            dictMainSubjects[mainSubject] = len(dictMainSubjects)
+                        idSubj = dictMainSubjects[mainSubject]
+                        objects = getSbjObjPaths(rdfMainSubject)
+                        for obj in objects:
+                            # normalising object
+                            if obj['o'] not in dictObjects:
+                                idObj = len(dictObjects)
+                                dictObjects[obj['o']] = idObj
+                            idObj = dictObjects[obj['o']]
+                            # normalising track
+                            track = tuple(obj['p'])
+                            if track not in dictTracks:
+                                idTrack = len(dictTracks)
+                                dictTracks[track] = idTrack
+                            idTrack = dictTracks[track]
+                            cellmlPaths += [idSubj, idTrack, idObj]
+                        # normalising predicate
+                        for p in objects['p']:
+                            dictPredicates[p] = dictPredicates[p] if p in dictPredicates else len(dictPredicates)
 
-                    """get all main RDF subjects and path"""
-                    for rdfMainSubject in root:
-                        if len(rdfMainSubject.attrib) > 0:
-                            att = list(rdfMainSubject.attrib.keys())[0]
-                            entityTypes.add(att)
-                            mainSubject = rdfMainSubject.attrib[att]
-                            # normalise subject
-                            if mainSubject not in dictMainSubjects:
-                                dictMainSubjects[mainSubject] = len(
-                                    dictMainSubjects)
-                            idSubj = dictMainSubjects[mainSubject]
-                            objects = getSbjObjPaths(rdfMainSubject)
-                            for obj in objects:
-                                # normalise object
-                                if obj['o'] not in dictObjects:
-                                    idObj = len(dictObjects)
-                                    dictObjects[obj['o']] = idObj
-                                idObj = dictObjects[obj['o']]
-                                # normalise track
-                                track = tuple(obj['p'])
-                                if track not in dictTracks:
-                                    idTrack = len(dictTracks)
-                                    dictTracks[track] = idTrack
-                                idTrack = dictTracks[track]
-                                cellmlPaths += [idSubj, idTrack, idObj]
-            self._saveBinaryInteger(cellmlPaths, 'tmp', 'BM_rdfPaths')
-            self._dumpJson(dictMainSubjects, 'tmp', 'BM_subject.json')
-            self._dumpJson(dictObjects, 'tmp', 'BM_object.json')
-            # modify trac so it store --> idTrack, [track]
-            reverseDictTracks = {value: list(key)
-                                 for key, value in dictTracks.items()}
-            self._dumpJson(reverseDictTracks, 'tmp', 'BM_track.json')
-            self._dumpJson(list(entityTypes), 'tmp', 'BM_entityTypes')
-            print("Seconds since epoch =", time.time() - seconds)
-            return cellmlPaths
-        getAllRdfs()
+        self._saveBinaryInteger(cellmlPaths, 'tmp', self.repository + '_rdfPaths')
+        self._dumpJson(dictMainSubjects, 'tmp', self.repository + '_subject.json')
+        self._dumpJson(dictObjects, 'tmp', self.repository + '_object.json')
+        self._dumpJson(dictPredicates, 'tmp', self.repository + '_predicate.json')
+
+        # modify track so it store --> idTrack, [track]
+        reverseDictTracks = {value: list(key)for key, value in dictTracks.items()}
+        self._dumpJson(reverseDictTracks, 'tmp', self.repository + '_track.json')
+        self._dumpJson(list(entityTypes), 'tmp', self.repository + '_entityTypes')
+        print("Seconds since epoch =", time.time() - seconds)
+
+    def __buildIndexBMOmex(self, *args):
+        def getPathToObjs(s, g):
+            pathToObjs = []
+            tmpObjPath = {o:[p] for p, o in g.predicate_objects(subject=s)}
+            while len(tmpObjPath) > 0:
+                objKeys = tmpObjPath.copy()
+                for o in objKeys:
+                    children = list(g.predicate_objects(subject=o))
+                    if len(children) == 0:
+                        pathToObjs += [{'p': tmpObjPath[o], 'o': o}]
+                    else:
+                        for pred, obj in children:
+                            tmpObjPath[obj] = tmpObjPath[o] + [pred]
+                    del tmpObjPath[o]
+            return pathToObjs
+
+        # initialisation:
+        seconds = time.time()
+        sbjPathObjs = []
+        rdfPaths = []
+        dictTracks = {}
+        dictObjects = {}
+        dictEntities = {}
+        dictPredicates = {}
+
+        #load bm-omex rdf
+        import io
+        filename = os.path.join(self.currentPath, 'tmp', self.repository + '_rdf.rdf')
+        with io.open(filename, 'r', encoding='"ISO-8859-1"') as f:
+            text = f.read()
+        g = rdflib.Graph()
+        g.parse(data=text)
+
+        #get all entities / subjects, objects, tracks:
+        for s, p, o in g:
+            if len(list(g.subject_predicates(object=s))) == 0:
+                if s not in dictEntities:
+                    dictEntities[s] = len(dictEntities)
+                idSbj = dictEntities[s]
+                predicates_objs = getPathToObjs(s, g)
+                for predicates_obj in predicates_objs:
+                    # normalised object
+                    if predicates_obj['o'] not in dictObjects:
+                        dictObjects[predicates_obj['o']] = len(dictObjects)
+                    idObj = dictObjects[predicates_obj['o']]
+                    # normalise track
+                    track = tuple(predicates_obj['p'])
+                    if track not in dictTracks:
+                        dictTracks[track] = len(dictTracks)
+                    idTrack = dictTracks[track]
+                    rdfPaths += [idSbj, idTrack, idObj]
+
+            dictPredicates[p] = dictPredicates[p] if p in dictPredicates else len(dictPredicates)
+
+        self._saveBinaryInteger(rdfPaths, 'tmp', self.repository + '_rdfPaths')
+        self._dumpJson(dictEntities, 'tmp', self.repository + '_subject.json')
+        self._dumpJson(dictObjects, 'tmp', self.repository + '_object.json')
+        self._dumpJson(dictPredicates, 'tmp', self.repository + '_predicate.json')
+
+        # modify trac so it store --> idTrack, [track]
+        reverseDictTracks = {value: list(key)for key, value in dictTracks.items()}
+        self._dumpJson(reverseDictTracks, 'tmp', self.repository + '_track.json')
+        print("Seconds since epoch =", time.time() - seconds)
+        return rdfPaths
 
     def __getAllUrlContents(self):
-        links = self._loadJson('tmp', 'listOfLinks.json')
-        data = self._loadJson('tmp', 'cellMlData.json')
+        links = self._loadJson('tmp', self.repository + '_listOfLinks.json')
+        data = self._loadJson('tmp', self.repository + '_cellMlData.json')
         for link, isUpdate in links.items():
             if bool(isUpdate):
                 text = requests.get(link).text
                 data[link] = text
         print(len(data))
-        self._dumpJson(data, 'tmp', 'cellMlData.json')
+        self._dumpJson(data, 'tmp', self.repository + '_cellMlData.json')
 
     # GET ALL cellml LINK FROM PROVIDED GRAPH
     def getCellmlLinks(self, url):
@@ -191,7 +266,7 @@ class IndexSPARQL(GeneralNLIMED):
     def getAllCellmlLink(self):
         # check available link
         listLinks = {link: False for link in self._loadJson(
-            'tmp', 'listOfLinks.json')} if self.isUpdate else {}
+            'tmp', self.repository + '_listOfLinks.json')} if self.isUpdate else {}
         # get all graphs
         __queryGraph = """ SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s ?p ?o }}"""
         sparqlendpoint = 'https://models.physiomeproject.org/pmr2_virtuoso_search'
@@ -207,7 +282,7 @@ class IndexSPARQL(GeneralNLIMED):
                         currLinks = self.getCellmlLinks(graph['value'])
                         for link in currLinks:
                             listLinks[link] = True if link not in listLinks else False
-        self._dumpJson(listLinks, 'tmp', 'listOfLinks.json')
+        self._dumpJson(listLinks, 'tmp', self.repository + '_listOfLinks.json')
         print('Number of cellml and rdf links with rdf is %d' % len(listLinks))
 
     # GET SEQUENCE ON PATH BETWEEN THE MOST LEFT SUBJECT AND THE MOST RIGHT OBJECT
@@ -236,7 +311,7 @@ class IndexSPARQL(GeneralNLIMED):
 
     # BUILD OF SIMPLIFIED RDF TRIPPLETS FROM GIVEN url
     def getAllRdfs(self):
-        cellMlData = self._loadJson('tmp', 'cellMlData.json')
+        cellMlData = self._loadJson('tmp', self.repository + '_cellMlData.json')
         cellmlPaths = []
         for cellmlLink, content in cellMlData.items():
             try:
@@ -275,7 +350,7 @@ class IndexSPARQL(GeneralNLIMED):
                                      'namespaces': namespaces, 'paths': paths}]
             except:
                 print("RDF format error: %s" % cellmlLink)
-        self._dumpJson(cellmlPaths, 'tmp', 'rdfPaths.json')
+        self._dumpJson(cellmlPaths, 'tmp', self.repository + '_rdfPaths.json')
         return cellmlPaths
 
     def getNameSpaceAndVal(self, uri):
@@ -307,7 +382,7 @@ class IndexSPARQL(GeneralNLIMED):
 
     def createIndexPrefix(self):
         # create index of prefix and namespace
-        data = self._loadJson('tmp', 'rdfPaths.json')
+        data = self._loadJson('tmp', self.repository + '_rdfPaths.json')
         index_pref_ns = {}  # {pref0:ns0, pref1:ns1, ...}
         index_ns_pref = {}  # {ns0:pref0, ns1:pref1, ...}
         list_namespaces = []
@@ -326,13 +401,13 @@ class IndexSPARQL(GeneralNLIMED):
         for i in range(len(list_namespaces)):
             index_pref_ns[i] = list_namespaces[i]
             index_ns_pref[list_namespaces[i]] = i
-        self._dumpJson(index_pref_ns, 'tmp', 'idx_pref_ns')
-        self._dumpJson(index_ns_pref, 'tmp', 'idx_ns_pref')
+        self._dumpJson(index_pref_ns, 'tmp', self.repository + '_idx_pref_ns')
+        self._dumpJson(index_ns_pref, 'tmp', self.repository + '_idx_ns_pref')
 
     def createIndexPredicate(self):
         # create index of predicate
-        data = self._loadJson('tmp', 'rdfPaths.json')
-        index_ns_pref = self._loadJson('tmp', 'idx_ns_pref')
+        data = self._loadJson('tmp', self.repository + '_rdfPaths.json')
+        index_ns_pref = self._loadJson('tmp', self.repository + '_idx_ns_pref')
         # {predId0:(pref0,val0), predId1:(pref1,val1), ...}
         index_predi_pred = {}
         # {(pref0,val0):predId0, (pref1,val1):predId1, ...}
@@ -352,17 +427,17 @@ class IndexSPARQL(GeneralNLIMED):
         print('# of distinct predicate %d' % len(list_predicate))
         for i in range(len(list_predicate)):
             index_predi_pred[i] = list_predicate[i]
-        self._dumpJson(index_predi_pred, 'tmp', 'idx_id_pred')
+        self._dumpJson(index_predi_pred, 'tmp', self.repository + '_idx_id_pred')
         # save predicate to file
-        index_pref_ns = self._loadJson('tmp', 'idx_pref_ns')
-        myPredList = []
-        for myPred in list_predicate:
-            myPredList += [index_pref_ns[str(myPred[0])] + myPred[1]]
-        self._saveToFlatFile(myPredList, 'tmp', 'listOfPredicates.txt')
+        index_pref_ns = self._loadJson('tmp', self.repository + '_idx_pref_ns')
+        dictPredicates = {}
+        for k, pred in index_predi_pred.items():
+            dictPredicates[index_pref_ns[str(pred[0])] + pred[1]] = k
+        self._dumpJson(dictPredicates, 'tmp', self.repository + '_predicate.json')
 
     def createIndexObjectAndSubject(self):
         # create index of object and index of subject
-        data = self._loadJson('tmp', 'rdfPaths.json')
+        data = self._loadJson('tmp', self.repository + '_rdfPaths.json')
         index_object_oi = {}  # {obj0:objId0,obj1:objId1,...}
         index_oi_object = {}  # {objId0:obj0,objId1:obj1,...}
         index_subject_si = {}  # {sbj0:sbjId0,sbj1:sbjId1,...}
@@ -385,24 +460,24 @@ class IndexSPARQL(GeneralNLIMED):
             index_si_subject[i] = list_subject[i]
         print('# of distinct object %d' % len(index_object_oi))
         print('# of distinct subject %d' % len(index_si_subject))
-        self._dumpJson(index_oi_object, 'tmp', 'idx_id_object')
-        self._dumpJson(index_object_oi, 'tmp', 'idx_object_id')
-        self._dumpJson(index_si_subject, 'tmp', 'idx_id_subject')
-        self._dumpJson(index_subject_si, 'tmp', 'idx_subject_id')
+        self._dumpJson(index_oi_object, 'tmp', self.repository + '_idx_id_object')
+        self._dumpJson(index_object_oi, 'tmp', self.repository + '_idx_object_id')
+        self._dumpJson(index_si_subject, 'tmp', self.repository + '_idx_id_subject')
+        self._dumpJson(index_subject_si, 'tmp', self.repository + '_idx_subject_id')
         # save obj to file
-        self._saveToFlatFile(list_object, 'tmp', 'listOfObjects.txt')
+        self._saveToFlatFile(list_object, 'tmp', self.repository + '_listOfObjects.txt')
         # save sbj to file
-        self._saveToFlatFile(list_subject, 'tmp', 'listOfSubjects.txt')
+        self._saveToFlatFile(list_subject, 'tmp', self.repository + '_listOfSubjects.txt')
 
     def restructureRdfPath(self):
         # restructured cellmlPaths so it only contains id, not full text
         # cellMlPath=['link':cellmlurl, 'namespace':[ns0,ns1,...] 'paths':[{'s':s0,'o':o0,'p':[p0]},{'s':s1,'o':o1,'p':[p1]},...,{'s':s2,'o':o2,'p':[p2]}]]
         # res_cellMlPaths = [[sbjId0,objId0,[predId00,predId01,...]] ... [sbjIdn,objIdn,[predIdn0,predIdn1,...]]]
-        data = self._loadJson('tmp', 'rdfPaths.json')
-        index_object_oi = self._loadJson('tmp', 'idx_object_id')
-        index_subject_si = self._loadJson('tmp', 'idx_subject_id')
-        index_ns_pref = self._loadJson('tmp', 'idx_ns_pref')
-        index_id_pred = self._loadJson('tmp', 'idx_id_pred')
+        data = self._loadJson('tmp', self.repository + '_rdfPaths.json')
+        index_object_oi = self._loadJson('tmp', self.repository + '_idx_object_id')
+        index_subject_si = self._loadJson('tmp', self.repository + '_idx_subject_id')
+        index_ns_pref = self._loadJson('tmp', self.repository + '_idx_ns_pref')
+        index_id_pred = self._loadJson('tmp', self.repository + '_idx_id_pred')
         index_pred_predi = {}
         for key, val in index_id_pred.items():
             index_pred_predi[tuple(val)] = key
@@ -420,11 +495,11 @@ class IndexSPARQL(GeneralNLIMED):
                     pred_ids += [pred_id]
                 restructuredPaths += [[sbj_id, obj_id, tuple(pred_ids)]]
         print('# of path %d' % len(restructuredPaths))
-        self._dumpJson(restructuredPaths, 'tmp', 'restructureRdfPath.json')
+        self._dumpJson(restructuredPaths, 'tmp', self.repository + '_restructureRdfPath.json')
 
     def createIndexTrack(self):
         # create index of track
-        data = self._loadJson('tmp', 'restructureRdfPath.json')
+        data = self._loadJson('tmp', self.repository + '_restructureRdfPath.json')
         # {trackId0:[predId00,predId01,...],trackId1:[predId10,predId11,...], ...}
         index_tracki_track = {}
         list_track = []
@@ -435,17 +510,17 @@ class IndexSPARQL(GeneralNLIMED):
             index_tracki_track[i] = list_track[i]
         print('# of distinct track %d' % len(index_tracki_track))
         # save to index file
-        self._dumpJson(index_tracki_track, 'tmp', 'idx_id_track')
+        self._dumpJson(index_tracki_track, 'tmp', self.repository + '_idx_id_track')
         # save track to file
-        self._saveToFlatFile(list_track, 'tmp', 'listOfTracks.txt')
+        self._saveToFlatFile(list_track, 'tmp', self.repository + '_listOfTracks.txt')
 
     def fullyRestructureRdfPath(self):
         # restructure res_cellMlPath so it fully contain subject id, object id, and list of track id
         # res_res_cellMlPath = [[sid0,oid0,trackid0] ... [sidn,oidn,trackidn]]
         # then removing any duplicate
-        data = self._loadJson('tmp', 'restructureRdfPath.json')
+        data = self._loadJson('tmp', self.repository + '_restructureRdfPath.json')
         index_track_tracki = {}
-        index_tracki_track = self._loadJson('tmp', 'idx_id_track')
+        index_tracki_track = self._loadJson('tmp', self.repository + '_idx_id_track')
         for key, val in index_tracki_track.items():
             index_track_tracki[tuple(val)] = key
         fullyResPaths = []
@@ -456,11 +531,11 @@ class IndexSPARQL(GeneralNLIMED):
             fullyResPaths += [((sbj_id, obj_id), track_id)]
         fullyResPaths = list(set(fullyResPaths))
         print('# of distinct path %d' % len(fullyResPaths))
-        self._dumpJson(fullyResPaths, 'tmp', 'fullyRestructureRdfPath.json')
+        self._dumpJson(fullyResPaths, 'tmp', self.repository + '_fullyRestructureRdfPath.json')
 
     def createIndexObjectSubjectPair(self):
         # create index of object=>subject, subject=>object, subject,object=>predicate
-        data = self._loadJson('tmp', 'fullyRestructureRdfPath.json')
+        data = self._loadJson('tmp', self.repository + '_fullyRestructureRdfPath.json')
         # {idObj0:[idSbj01,idSbj02,...], idObj1:[idSbj11,idSbj12,...]}
         index_obj_sbj = {}
         # {idSbj0:[idObj01,idObj02,...], idSbj1:[idObj11,idObj12,...]}
@@ -486,9 +561,9 @@ class IndexSPARQL(GeneralNLIMED):
                 index_sbjobj_tracks[key] = index_sbjobj_tracks[key] + [listTrack]
         print('# of distinct subject-object pair %d' %
               len(index_sbjobj_tracks))
-        self._dumpJson(index_obj_sbj, 'tmp', 'idx_obj_sbj')
-        self._dumpJson(index_sbj_obj, 'tmp', 'idx_sbj_obj')
+        self._dumpJson(index_obj_sbj, 'tmp', self.repository + '_idx_obj_sbj')
+        self._dumpJson(index_sbj_obj, 'tmp', self.repository + '_idx_sbj_obj')
         tmp_index_sbjobj_tracks = []
         for key, val in index_sbjobj_tracks.items():
             tmp_index_sbjobj_tracks += [[list(key), val]]
-        self._dumpJson(tmp_index_sbjobj_tracks, 'tmp', 'idx_sbjobj_tracks')
+        self._dumpJson(tmp_index_sbjobj_tracks, 'tmp', self.repository + '_idx_sbjobj_tracks')

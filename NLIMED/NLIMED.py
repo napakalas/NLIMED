@@ -1,5 +1,5 @@
 import sys
-from NLIMED.query_annotator import StanfordAnnotator, NLTKAnnotator, OBOLIBAnnotator
+from NLIMED.query_annotator import *
 from NLIMED.sparql_generator import SPARQLGenerator
 
 def config(apikey, corenlp_home):
@@ -32,31 +32,29 @@ class NLIMED:
 
         Examples:
             nlimed = NLIMED(repo='pmr', parser='stanford')
-
             nlimed = NLIMED(repo='pmr', parser='stanford', pl=3)
-
-            nlimed = NLIMED(repo='pmr', parser='stanford', pl=2, alpha=4, beta=0.7, gamma=0.5, delta=0.8)
-
+            nlimed = NLIMED(repo='pmr', parser='stanford', pl=2, alpha=4, beta=0.7, gamma=0.5, delta=0.8, theta=0.01)
             nlimed = NLIMED(repo='bm', parser='nltk')
-
             nlimed = NLIMED(repo='bm', parser='nltk', pl=2)
-
-            nlimed = NLIMED(repo='bm', parser='nltk', pl=3, alpha=2, beta=0.2, gamma=0.2, delta=0.3, quite=True)
+            nlimed = NLIMED(repo='bm', parser='nltk', pl=3, alpha=2, beta=0.2, gamma=0.2, delta=0.3, theta=0.01, quite=True)
+            nlimed = NLIMED(repo='bm-omex', parser='mixed', pl=3, alpha=2, beta=0.2, gamma=0.2, delta=0.3, theta=0.01, cutoff=1.0, quite=True)
 
         Attributes:
-            repo {'pmr','bm'} (mandatory): the repository name, pmr for the Physiome Model Repository or bm for the BioModels.
+            repo {'pmr', 'bm', 'bm-omex'} (mandatory): the repository name, pmr for the Physiome Model Repository or bm for the BioModels.
 
-            parser {'stanford','nltk','ncbo'} (mandatory): the type of parser used to annotated natural language query into ontologies.
+            parser {'stanford', 'nltk', 'stanza', 'mixed', 'ncbo'} (mandatory): the type of parser used to annotated natural language query into ontologies.
 
             pl (int) (optional): precision level, to set up the maximum number of considered ontologies related to phrases
 
             alpha (float) (>=0) (optional) : the multiplier of preffered_label feature
 
-            beta (float) (>=0) (optional) : the multiplier of synonym feature
+            beta (float) (>=0) (optional) : the multiplier of synonyms feature
 
-            gamma (float) (>=0) (optional) : the multiplier of definition feature
+            gamma (float) (>=0) (optional) : the multiplier of definitions feature
 
-            delta (float) (>=0) (optional) : the multiplier of description feature
+            delta (float) (>=0) (optional) : the multiplier of palrent labels feature
+
+            theta (float) (>=0) (optional) : the multiplier of description feature
 
             quiet (boolean) (optional) : set to not print unnecessary message
 
@@ -73,14 +71,18 @@ class NLIMED:
         vargs = self.__getValidArgs(**vargs)
         try:
             if vargs['parser'] == 'stanford':
-                self.annotator = StanfordAnnotator(**vargs)
+                self.__annotator = StanfordAnnotator(**vargs)
             elif vargs['parser'] == 'nltk':
-                self.annotator = NLTKAnnotator(**vargs)
+                self.__annotator = NLTKAnnotator(**vargs)
             elif vargs['parser'] == 'ncbo':
-                self.annotator = OBOLIBAnnotator(**vargs)
+                self.__annotator = OBOLIBAnnotator()
+            elif vargs['parser'] == 'stanza':
+                self.__annotator = StanzaAnnotator(**vargs)
+            elif vargs['parser'] == 'mixed':
+                self.__annotator = MixedAnnotator(**vargs)
         except:
             raise Error("  Error: cannot instantiate annotator, try other parser {stanford, nltk, ncbo}")
-        self.sparqlGen = SPARQLGenerator(vargs['repo'])
+        self.__sparqlGen = SPARQLGenerator(vargs['repo'])
 
     def __getValidArgs(self, **vargs):
         """
@@ -90,19 +92,20 @@ class NLIMED:
         def __showErrorMessage():
             return """
             arguments are not complete or values are not correct
-              - repo ['pmr','bm']
-              - parser ['stanford.','nltk','ncbo']
+              - repo ['pmr','bm','bm-omex']
+              - parser ['stanford', 'nltk', 'stanza', 'mixed', 'ncbo']
               - [pl  PL>1]
               - [alpha a>=0]
               - [beta b>=0]
               - [gamma g>=0]
               - [delta d>=0]
+              - [theta t>=0]
               - [quite boolean]
             example:
               minimum call:
                 NLIMED(repo='pmr', parser='stanford')
               complete call:
-                NLIMED(repo='pmr', parser='stanford', pl=1, alpha=4, beta=0.7, gamma=0.5, delta=0.8, quite=True)
+                NLIMED(repo='pmr', parser='stanford', pl=1, alpha=4, beta=0.7, gamma=0.5, delta=0.8, theta=0.01, quite=True)
             """
         if all(key in vargs.keys() for key in __dictArgsMandatory__):
             # check mandatory arguments
@@ -129,7 +132,7 @@ class NLIMED:
         else:
             raise ValueError(__showErrorMessage())
 
-    def getModels(self, query, format):
+    def getModels(self, query, format='json'):
         """
         A function to get model entities by providing natural language query:
 
@@ -139,7 +142,6 @@ class NLIMED:
 
             Arguments:
                 query (string): text containing natural language query_type
-
                 format {'json','print'}: specifying returning format, json for json format, print to show on console
 
             Results:
@@ -149,16 +151,20 @@ class NLIMED:
 
                 print: print model entities to console
         """
-        annotated = self.annotator.annotate(query)
-        resultDict = {'vars': [], 'results': []}
+        annotated = self.__annotator.annotate(query)
+        predicates = annotated['predicates'] if 'predicates' in annotated else []
+        resultDict = {'vars': [], 'results': [], 'sparqls':[]}
         for annTerm in annotated['result']:
-            sparqls = self.sparqlGen.constructSPARQL(*annTerm[0])
+            sparqls = self.__sparqlGen.constructSPARQL(annTerm, predicates)
             for sparql in sparqls:
-                sparqlResult = self.sparqlGen.runSparQL(sparql)
-                resultDict['vars'] = sparqlResult['head']['vars']
-                for binding in sparqlResult['results']['bindings']:
-                    result = {var: binding[var]['value'] for var in binding}
-                    resultDict['results'] += [result]
+                sparqlResult = self.__sparqlGen.runSparQL(sparql[0])
+                if len(sparqlResult)>0:
+                    resultDict['sparqls'] += [sparql]
+                    resultDict['vars'] = sparqlResult['head']['vars']
+                    for binding in sparqlResult['results']['bindings']:
+                        result = {var: binding[var]['value'] for var in binding}
+                        if result not in resultDict['results']:
+                            resultDict['results'] += [result]
         if format == 'json':
             return resultDict
         elif format == 'print':
@@ -168,7 +174,7 @@ class NLIMED:
                     print('  ' + key + ': ' + field)
                 print('\n')
 
-    def getSparql(self, query,  format):
+    def getSparql(self, query, format='json'):
         """
         A function to get SPARQL[s] by providing natural language query:
 
@@ -178,18 +184,19 @@ class NLIMED:
 
             Arguments:
                 query (string): text containing natural language query_type
-
                 format {'json','print'}: specifying returning format, json for json format, print to show on console
 
             Results:
                 json: a list of SPARQL[s]
-
                 print: print SPARQL[s] to console
         """
-        annotated = self.annotator.annotate(query)
+        annotated = self.__annotator.annotate(query)
+        predicates = annotated['predicates'] if 'predicates' in annotated else []
         sparqlList = []
         for annTerm in annotated['result']:
-            sparqlList += list(self.sparqlGen.constructSPARQL(*annTerm[0]))
+            sparqlList += list(self.__sparqlGen.constructSPARQL(annTerm, predicates))
+        sparqlList.sort(key=lambda x:x[1], reverse=True)
+
         if format == 'json':
             return sparqlList
         elif format == 'print':
@@ -197,7 +204,7 @@ class NLIMED:
                 print(sparql)
                 print('\n')
 
-    def getAnnotated(self, query,  format):
+    def getAnnotated(self, query,  format='json'):
         """
         A function to get annotation results by providing natural language query:
 
@@ -207,15 +214,13 @@ class NLIMED:
 
             Arguments:
                 query (string): text containing natural language query_type
-
                 format {'json','print'}: specifying returning format, json for json format, print to show on console
 
             Results:
                 json: {'phrases':[...],'result':{'ontologies':[...],'weight':float}}
-
                 print: print annotation results to console
         """
-        annotated = self.annotator.annotate(query)
+        annotated = self.__annotator.annotate(query)
         if format == 'json':
             return annotated
         elif format == 'print':
@@ -226,7 +231,7 @@ class NLIMED:
                 print('  weight: ' + str(result[1]))
                 print('\n')
 
-    def getVerbose(self, query, format):
+    def getVerbose(self, query, format='json'):
         """
         A function to get verbose results of annotation, SPARQL[s], and model entities by providing natural language query:
 
@@ -252,8 +257,8 @@ class NLIMED:
         if format == 'json':
             return {'annotated': annotated, 'sparql': sparqlList, 'models': modelList}
 
-    def setWeighting(self, alpha, beta, gamma, delta, pl):
-        self.annotator.setWeighting(alpha,beta,gamma,delta,pl)
+    def setWeighting(self, alpha, beta, gamma, delta, theta, pl, cutoff):
+        self.__annotator.setWeighting(alpha, beta, gamma, delta, theta, pl, cutoff)
 
     def getWeighting(self):
-        return self.annotator.getWeighting()
+        return self.__annotator.getWeighting()

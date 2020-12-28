@@ -39,13 +39,15 @@ def runApp():
 def setupSystem():
     #config NLIMED
     if all(key in sys.argv for key in ["--apikey","--corenlp-home"]):
-        if sys.argv.index("--apikey") < len(sys.argv)-1 and sys.argv.index("--corenlp-home") < len(sys.argv)-1:
-            file = os.path.join(os.path.dirname(os.path.realpath(__file__)),"config.txt")
-            #setup apikey NCBO and coreNLP home
-            config = {"apikey":sys.argv[sys.argv.index("--apikey")+1],"corenlp-home":sys.argv[sys.argv.index("--corenlp-home")+1]}
-            with open(file, 'w') as fp:
-                json.dump(config, fp)
-                print("  configuration succeed")
+        if sys.argv.index("--apikey")+1 < len(sys.argv) and sys.argv.index("--corenlp-home")+1 < len(sys.argv):
+            apikey = sys.argv[sys.argv.index("--apikey")+1]
+            corenlp_home = sys.argv[sys.argv.index("--corenlp-home")+1]
+            from NLIMED.NLIMED import config
+            config(apikey, corenlp_home)
+            print("  configuration succeed")
+        else:
+            print("  error config")
+            print("  example: $ NLIMED --config --apikey {your-ncbo-api-key} --corenlp-home {CoreNLP-folder}")
     else:
         print("  error config")
         print("  example: $ NLIMED --config --apikey {your-ncbo-api-key} --corenlp-home {CoreNLP-folder}")
@@ -53,7 +55,7 @@ def setupSystem():
 def buildIndex():
     repo = sys.argv[2]
     ontologies = sys.argv[3]
-    if repo in ['pmr','bm']:
+    if repo in ['pmr', 'bm', 'bm-omex']:
         from NLIMED.rdf_graph_index import  IndexSPARQL
         from NLIMED.text_feature_index import IndexAnnotation
         # idxSparql = IndexSPARQL(repo)
@@ -92,6 +94,8 @@ def getArguments():
         '-g', '--gamma', default=__dictDefArgsVal__['gamma'], help='Minimum gamma is 0', type=__dictArgsOptional__['gamma'])
     parser.add_argument(
         '-d', '--delta', default=__dictDefArgsVal__['delta'], help='Minimum delta is 0', type=__dictArgsOptional__['delta'])
+    parser.add_argument(
+        '-t', '--theta', default=__dictDefArgsVal__['theta'], help='Minimum delta is 0', type=__dictArgsOptional__['theta'])
     args = vars(parser.parse_args())
     args['quite'] = False
     return(args)
