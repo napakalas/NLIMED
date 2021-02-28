@@ -11,6 +11,8 @@ def runTerminal():
         setupSystem()
     elif '--build-index' in sys.argv:
         buildIndex()
+    elif '--hyperparam' in sys.argv:
+        hyperparam()
     else:
         getArguments()
 
@@ -62,12 +64,36 @@ def buildIndex():
         # idxSparql.buildIndex(*sys.argv)
         # create Index ANNOTATION and inverted index
         idxAnnotation = IndexAnnotation(repo, ontologies)
-        # idxAnnotation.collectClassAttributes()
+        idxAnnotation.collectClassAttributes()
         idxAnnotation.developInvertedIndex()
     else:
         print("  error indexing")
         print('  pmr: $ NLIMED --build-index pmr "{location-of-ontology-files}"')
         print('  bm : $ NLIMED --build-index bm "{location-of-ontology-files}" "{location-of-RDF-files}"')
+
+def hyperparam():
+    """ generate hyperparameter and save it in Files
+        input: - repository
+               - dataTrainZile
+               - precAt -> maximum of precAt
+               - preff/header file to be saved
+               - destination folder
+               - parser
+        how to run: NLIMED --hyperparam pmr "DataTest" 9 pure "dest" stanford
+    """
+    repo = sys.argv[2]
+    datatTrainFile = sys.argv[3]
+    precAt = int(sys.argv[4])
+    preffix = sys.argv[5]
+    destination = sys.argv[6]
+    parser = sys.argv[7]
+    from NLIMED.NLIMED import NLIMED
+    nli = NLIMED(repo=repo, parser=parser)
+    stats = nli.hyperparam(datatTrainFile, precAt)
+    import json, time
+    filename = destination+preffix+"_"+str(precAt) + "_" + parser+ "_" + str(time.time()) + ".json"
+    with open(filename, 'w') as fp:
+        json.dump(stats, fp)
 
 def getArguments():
     from NLIMED import __dictArgsOptional__, __dictArgsMandatory__, __dictDefArgsVal__

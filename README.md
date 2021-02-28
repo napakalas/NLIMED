@@ -7,23 +7,22 @@ Note: model entities extracted from BioModels are those having ontologies indexe
 
 License :: OSI Approved :: GNU General Public License (GPL)
 
+## Demo
+http://130.216.217.102/nlimed
+
 ## References
 The main reference of this work is: https://doi.org/10.1101/756304
 
-Cite the following works when you implement NLIMED with parser of:
+Cite the following works when you implement NLIMED with parser or nlp of:
 1. CoreNLP: https://stanfordnlp.github.io/CoreNLP/citing.html
 2. NLTK: https://arxiv.org/abs/cs/0205028
 3. NCBO: https://www.ncbi.nlm.nih.gov/pubmed/21347171
+4. Stanza and mixed: http://arxiv.org/abs/2007.14640
 
 ## Installation
 We sugest you to install NLIMED from PyPI. If you already installed [pip](https://pip.pypa.io/en/stable/installing/), run the following command:
   ```
   pip install NLIMED
-  ```
-This installation will also resolve nltk dependency.
-In a case you already have old NLIMED installation, you may update it use:
-  ```
-  pip install NLIMED -U
   ```
 As an alternative, you can clone and download this github repository and use the following command:
   ```
@@ -37,15 +36,15 @@ As an alternative, you can clone and download this github repository and use the
 NLIMED implements Stanford Parser, NLTK Parser, and NCBO parser. You may select one of them for your system.
   * NLTK Parser:
     - NLTK is automatically deploy as a dependency.
-  * NCBO parser:
-    - You have to get a [bioportal](https://bioportal.bioontology.org/help#Getting_an_API_key) apikey  and run the NLIMED config command.
-
   * Stanford Parser:
     - Download the [CoreNLP](https://stanfordnlp.github.io/CoreNLP/download.html) zip file and then extract it on your deployment folder.
-
     - Based on stanford-corenlp version downloaded, you will find a different zip file and extracted folder names. For example, in this works, we get:
       - a zip file : stanford-corenlp-full-2018-10-05.zip
       - a folder   : stanford-corenlp-full-2018-10-05
+  * Stanza:
+    - Stanza is automatically deploy as a dependency.
+  * NCBO parser:
+    - You have to get a [bioportal](https://bioportal.bioontology.org/help#Getting_an_API_key) apikey  and run the NLIMED config command.
 
   * **Configuring Stanford and NCBO parsers**
     If you intent to implement NLTK only, you don't need to configure. NLIMED configuration is needed for Stanford and NCBO parsers.

@@ -107,9 +107,17 @@ class GeneralNLIMED(ABC):
                 lst += [os.path.join(path, name)]
         return lst
 
+    def _getURICode(self, uri):
+        # function to get ontology class ID rather than full url
+        import re
+        partUri = uri[uri.rfind('/')+1:].lower()
+        regex = re.compile('[^a-z0-9]')
+        partUri = regex.sub('', partUri)
+        return partUri
+
 class GeneralNLP():
     __tokenizer = RegexpTokenizer(r'\w+')
-    nlp = stanza.Pipeline('en', package='craft', processors={'ner': 'BioNLP13CG'},verbose=False)
+    nlp = stanza.Pipeline('en' , package='craft', processors={'ner': 'BioNLP13CG'},verbose=False)
     def __init__(self):
         pass
 
@@ -162,16 +170,19 @@ class GeneralNLP():
                     else:
                         wordDeep[text.lower()] = [word['deep']]
             for word in wordDeep.copy():
+                if word in stopwords.words('english'): wordDeep.pop(word); continue
                 wordDeep[word] = round(sum(wordDeep[word])/len(wordDeep[word]),1)
             return wordDeep
         else:
             return {}
 
     def stopAndToken(self, text):
-        stWords = stopwords.words('english')
-        word_tokens = self.tokenise(text)
-        filtered_sentence = [w for w in word_tokens if not w in stWords]
+        tokens = self.tokenise(text)
+        filtered_sentence = [t for t in tokens if t not in stopwords.words('english')]
         return filtered_sentence
 
     def tokenise(self, text):
-        return self.__tokenizer.tokenize(text.lower())
+        if len(text.strip()) == 0: return []
+        doc = self.nlp(text)
+        tokens = [token.text.lower() for sentence in doc.sentences for token in sentence.tokens]
+        return tokens

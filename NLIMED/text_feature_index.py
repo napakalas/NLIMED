@@ -37,82 +37,104 @@ class IndexAnnotation(GeneralNLIMED, GeneralNLP):
         elif self.repository in ('bm', 'bm-omex'):
             self.__initData(ontoFolder)
 
-
     def __loadOntologyClasses(self, ontoFolder):
         """
             Loading ontology classes from csv and obo files. Only classes found
             in PMR, BioModels, and BM-Omex is extracted
         """
+        """
+            It is funny that the ontology classes are not always available in
+            the downloaded obo or csv files. It will be better to collaborate
+            all available file types although it will take more time
+        """
         self.ontologies = {}
         allFiles = self.getAllFilesInDir('tmp')
         fileName = os.path.join(self.currentPath, 'tmp', self.repository + '_onto.gz')
-        if any(fileName in file for file in allFiles):
+        # if organised ontologies file is available than load this file
+        if any(file.endswith(fileName) for file in allFiles):
             self.ontologies = self.loadPickle(fileName)
             return
+        # if the organised ontologies file is not available than proceed
         import pandas as pd
-        for fileName in os.listdir(ontoFolder):
-            ontoName = fileName[:fileName.rfind('.')].upper()
-            if  fileName.endswith('.csv') and ontoName in self.servers:
-                data = {}
-                fileName = os.path.join(ontoFolder,fileName)
-                df = pd.read_csv(fileName,sep=',',header=0, index_col=0)
-                for id in df.index:
-                    classId = id[id.rfind('/')+1:].upper().strip()
-                    # get prefered label
-                    pref = df.loc[id, 'Preferred Label']
-                    # get synonyms
-                    synonims = [synonim for synonim in df.loc[id].filter(regex='synonym|Synonym') if isinstance(synonim, str)]
-                    syn = [syn for synonim in synonims for syn in synonim.split('|')]
-                    # get deffinition
-                    deff = df.loc[id, 'Definitions'].split('|') if isinstance(df.loc[id, 'Definitions'], str) else []
-                    # get parent and grand parent labels
-                    parentLabel = []
-                    if isinstance(df.loc[id, 'Parents'], str):
-                        if not isinstance(df.loc[id, 'Parents'],str): continue
+        import re
+        ontoFiles = os.listdir(ontoFolder)
+        def getStandardId(classId):
+            classId = classId.split(' ')[0]
+            if ':' in classId:
+                reg, num = classId.strip().split(':')
+                if reg in self.ontoIdPattern:
+                    return self.ontoIdPattern[reg].replace('{num}', num).replace('{alp}',reg)
+            return ''
+
+        for ontoName in self.servers:
+            # get ontology file name
+            files = [ontoName.lower()+'.obo', ontoName.upper()+'.obo', ontoName.lower()+'.csv', ontoName.upper()+'.csv']
+            data = {}
+            for file in files:
+                if file not in ontoFiles: continue
+                fileName = os.path.join(ontoFolder,file)
+                if fileName.endswith('.obo'):
+                    print(ontoName+" : Extracting", fileName)
+                    f = open(fileName, 'r'); lines = f.readlines(); f.close()
+                    # get main url
+                    mainUrl = '' # temporarily emptying the main URL
+                    with open(fileName, 'r') as f:
+                        contents = f.read()
+                    ontoClasses = contents.split('[Term]\n')
+                    for ontoClass in ontoClasses:
+                        classId, preff, syn, deff, parentIds = '', '', [], [], []
+                        for line in ontoClass.strip().split('\n'):
+                            tmpLine = line.split(': ')
+                            if len(tmpLine) != 2: continue
+                            label, value = line.split(': ')
+                            if label == 'id': classId = getStandardId(value)
+                            if label == 'name': preff += value.strip()
+                            if label == 'def': deff += re.findall('\"(.*?)\"',value)
+                            if label == 'synonym': syn += re.findall('\"(.*?)\"',value)
+                            if label == 'is_a': parentIds += [getStandardId(value.split(' ! ')[0])]
+                        if classId != '':
+                            if classId not in data:
+                                data[classId] = [preff, syn, deff, parentIds]
+                            else:
+                                if len(syn) > len(data[classId][1]): data[classId][1] = syn
+                                if len(deff) > len(data[classId][2]): data[classId][2] = deff
+                                if len(parentIds) > len(data[classId][3]): data[classId][3] = parentIds
+
+                    # now convert parentId in data to prefered label
+                    for classId, val in data.items():
+                        tmpLabel = [data[parentId][0] for parentId in val[3] if parentId in data]
+                        val[3] = tmpLabel
+
+                if fileName.endswith('.csv'):
+                    print(ontoName+" : Extracting", fileName)
+                    df = pd.read_csv(fileName,sep=',',header=0, index_col=0, dtype = str)
+                    # df = df.dropna(axis=1, how='all')
+                    for id in df.index:
+                        classId = id[id.rfind('/')+1:].upper().strip()
+                        # get prefered label
+                        pref = df.loc[id, 'Preferred Label']
+                        # get synonyms
+                        synonims = [synonim for synonim in df.loc[id].filter(regex='synonym|Synonym') if isinstance(synonim, str)]
+                        syn = list(set([syn for synonim in synonims for syn in synonim.split('|')]))
+                        # get deffinition
+                        deff = df.loc[id, 'Definitions'].split('|') if isinstance(df.loc[id, 'Definitions'], str) else []
+                        # get parent and grand parent labels
+                        parentLabel = []
+                        if not isinstance(df.loc[id, 'Parents'], str): continue
                         for parentId in df.loc[id, 'Parents'].split('|'):
                             if parentId in df.index:
                                 parentLabel += [df.loc[parentId, 'Preferred Label']]
-                                if not isinstance(df.loc[parentId, 'Parents'],str): continue
-                                for grandPaId in df.loc[parentId, 'Parents'].split('|'):
-                                    if grandPaId in df:
-                                        parentLabel += [df.loc[grandPaId, 'Preferred Label']]
-                    # store as map in dictionary
-                    data[classId] = [pref, syn, deff, parentLabel]
-                mainUrl = id[:id.rfind('/')]
-                self.ontologies[ontoName] = {'mainUrl':mainUrl, 'dataVars':self.__featureTypes, 'data':data}
-            elif fileName.endswith('.obo') and ontoName in self.servers:
-                fileName = os.path.join(ontoFolder,fileName)
-                f = open(fileName, 'r')
-                lines = f.readlines()
-                f.close()
-                # get main url
-                mainUrl = ''
-                for line in lines:
-                    if 'http' in line:
-                        mainUrl = line[line.find('http'):-2]
-                        break
-                # get attributes
-                data, flag = {}, False
-                for i in range(len(lines)):
-                    if '[Term]' in lines[i]:
-                        flag = True
-                        classId, preff, syn, deff, parentLabel = '', '', [], [], []
-                    while flag == True:
-                        if len(lines[i].strip()) == 0:
-                            flag = False
-                            data[classId] = [preff, syn, deff, parentLabel]
-                            break
-                        if lines[i].startswith('id: '): classId = lines[i][4:].strip()
-                        if lines[i].startswith('name: '): preff += lines[i][6:].strip()
-                        if lines[i].startswith('def: '): deff += [lines[i][6:lines[i].rfind('"')].strip()]
-                        if lines[i].startswith('synonym: '): syn += [lines[i][10:lines[i].rfind('"')].strip()]
-                        if lines[i].startswith('is_a: '):
-                            parentId = lines[i][6:lines[i].rfind(' ! ')]
-                            parentLabel += [lines[i][lines[i].rfind('!')+2:].strip()]
-                            if parentId in data:
-                                parentLabel += data[parentId][3]
-                        i += 1
-                self.ontologies[ontoName] = {'mainUrl':mainUrl, 'dataVars':self.__featureTypes, 'data':data}
+                        # store as map in dictionary
+                        if classId not in data:
+                            data[classId] = [pref, syn, deff, parentLabel]
+                        else:
+                            if len(syn) > len(data[classId][1]): data[classId][1] = syn
+                            if len(deff) > len(data[classId][2]): data[classId][2] = deff
+                            if len(parentLabel) > len(data[classId][3]): data[classId][3] = parentLabel
+                    mainUrl = id[:id.rfind('/')]
+
+            self.ontologies[ontoName] = {'mainUrl':mainUrl, 'dataVars':self.__featureTypes, 'data':data}
+
         self.dumpPickle(self.ontologies, 'tmp', self.repository + '_onto.gz')
 
     def __initPMR(self, ontoFolder):
@@ -194,15 +216,13 @@ class IndexAnnotation(GeneralNLIMED, GeneralNLP):
                 clsId = cls['reg'] + ':' + cls['id']
                 if clsId in mapClass:
                     content = mapClass[clsId]
-                    content['link'] = content['link'] + [cls['text']]
+                    content['link'] += [cls['text']]
                 else:
                     id = self.ontoIdPattern[cls['reg'].upper()].replace('{num}', cls['id']).replace('{alp}',cls['reg'].upper())
                     if id in self.ontologies[cls['reg'].upper()]['data']:
                         vars = self.ontologies[cls['reg'].upper()]['dataVars']
                         data = self.ontologies[cls['reg'].upper()]['data'][id]
-                        content = {'link': [cls['text']]}
-                        for i in range(len(vars)):
-                            content[vars[i]] = data[i]
+                        content = {**{'link':[cls['text']]},**dict(zip(vars,data))}
                         mapClass[clsId] = content
         self._dumpJson(mapClass, 'tmp', self.repository + '_mapClass.json')
 
@@ -226,9 +246,7 @@ class IndexAnnotation(GeneralNLIMED, GeneralNLP):
                     if id in self.ontologies[ontoType]['data']:
                         vars = self.ontologies[ontoType]['dataVars']
                         data = self.ontologies[ontoType]['data'][id]
-                        content = {'link': [objId]}
-                        for i in range(len(vars)):
-                            content[vars[i]] = data[i]
+                        content = {**{'link':[objId]},**dict(zip(vars,data))}
                         mapClass[clsId] = content
                         found += 1
             count += 1
@@ -244,7 +262,12 @@ class IndexAnnotation(GeneralNLIMED, GeneralNLP):
             from bs4 import BeautifulSoup, Tag
         import re
 
-        predicates = self._loadJson('tmp', self.repository + '_predicate.json')
+        if  self.repository == 'pmr':
+            ns = self._loadJson('indexes', self.repository + '_idx_pref_ns')
+            preds = self._loadJson('indexes', self.repository + '_idx_id_pred')
+            predicates = {ns[str(val[0])]+val[1]:key for key, val in preds.items()}
+        else:
+            predicates = self._loadJson('tmp', self.repository + '_predicate.json')
         g01 = rdflib.Graph().parse(source='http://www.w3.org/2001/vcard-rdf/3.0')
         g99 = rdflib.Graph().parse(source='https://www.w3.org/1999/02/22-rdf-syntax-ns')
         predicateDict = {}
@@ -321,8 +344,20 @@ class IndexAnnotation(GeneralNLIMED, GeneralNLP):
             for featName, featVal in value.items():
                 if featName not in self.__featureTypes: continue
                 indexPos = self.__featureTypes.index(featName)
-                if isinstance(featVal, str): featVal = [featVal]
+
+                if isinstance(featVal, str):featVal = [featVal] # the data type of prefered label is string
+                # else:featVal += [value['prefLabel']] # anticipate empty synonym, description, and parent label
+                # try collapse features  except prefered lable:
+                # if indexPos == 0: featVal = [featVal]
+                # elif indexPos == 2: featVal += value[self.__featureTypes[indexPos-1]] + value[self.__featureTypes[indexPos+1]]
+                # else: featVal = []
+
+                # if indexPos == 0: featVal = [featVal] + value[self.__featureTypes[1]]
+                # elif indexPos == 1: continue
+
+
                 deepDependency = self.getDictDeepDependency(featVal)
+                feature = set()
                 feature = {word for words in featVal if words is not None for word in self.stopAndToken(words)}
                 for link in value['link']:
                     for term in feature:
@@ -408,7 +443,8 @@ class IndexAnnotation(GeneralNLIMED, GeneralNLP):
             for featName, featVal in value.items():
                 if featName not in self.__featureTypes: continue
                 indexPos = self.__featureTypes.index(featName)
-                if isinstance(featVal, str): featVal = [featVal]
+                if isinstance(featVal, str):featVal = [featVal] # the data type of prefered label is string
+                # else:featVal += [value['prefLabel']] # anticipate empty synonym, description, and parent label
                 deepDependency = self.getDictDeepDependency(value[featName])
                 feature = {word for words in featVal if words is not None for word in self.stopAndToken(words)}
                 for objId in value['link']:

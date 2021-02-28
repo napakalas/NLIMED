@@ -33,18 +33,24 @@ __license__ = "License :: OSI Approved :: GNU General Public License (GPL)"
 from NLIMED.NLIMED import NLIMED
 from NLIMED.NLIMED import getConfig, config
 
-# check nltk_data availability, download if not available
 import os as __os
+from pathlib import Path as __path
+__HOME_DIR = str(__path.home())
+
+# check nltk_data availability, download if not available
 import nltk as __nltk
-for required in ['stopwords', 'averaged_perceptron_tagger']:
-    __nltk.download(required, quiet=True)
+__nltk_rsc = __os.path.join(__HOME_DIR, 'nltk_data')
+for required in [__os.path.join('corpora', 'stopwords.zip'), __os.path.join('taggers', 'averaged_perceptron_tagger.zip')]:
+    if not __os.path.exists(__os.path.join(__nltk_rsc, required)):
+        __nltk.download(__os.path.basename(required)[:-4], quiet=True)
 
 # check stanza_data availability, download if not available
+
 import stanza as __stanza
-__stanza.download('en', package='craft', processors={'ner': 'AnatEM'}, verbose=False)
-__stanza.download('en', processors={'ner': 'BioNLP13CG'}, verbose=False)
-__stanza.download('en', processors={'ner': 'JNLPBA'}, verbose=False)
-__stanza.download('en', processors={'ner': 'i2b2'}, verbose=False)
+__stanza_rsc = __os.path.join(__HOME_DIR, 'stanza_resources/en/ner')
+for required in ['anatem.pt', 'bionlp13cg.pt', 'i2b2.pt', 'jnlpba.pt']:
+    if not __os.path.exists(__os.path.join(__stanza_rsc, required)):
+        __stanza.download('en', package='craft', processors={'ner': required[:-3]}, verbose=False)
 
 # standard arguments for NLIMED setup
 def __pl_type__(x):

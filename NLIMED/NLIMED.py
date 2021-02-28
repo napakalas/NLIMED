@@ -1,5 +1,4 @@
-import sys
-from NLIMED.query_annotator import *
+from NLIMED.query_annotator import StanfordAnnotator, NLTKAnnotator, OBOLIBAnnotator, StanzaAnnotator, MixedAnnotator
 from NLIMED.sparql_generator import SPARQLGenerator
 
 def config(apikey, corenlp_home):
@@ -41,21 +40,14 @@ class NLIMED:
 
         Attributes:
             repo {'pmr', 'bm', 'bm-omex'} (mandatory): the repository name, pmr for the Physiome Model Repository or bm for the BioModels.
-
             parser {'stanford', 'nltk', 'stanza', 'mixed', 'ncbo'} (mandatory): the type of parser used to annotated natural language query into ontologies.
-
             pl (int) (optional): precision level, to set up the maximum number of considered ontologies related to phrases
-
             alpha (float) (>=0) (optional) : the multiplier of preffered_label feature
-
             beta (float) (>=0) (optional) : the multiplier of synonyms feature
-
             gamma (float) (>=0) (optional) : the multiplier of definitions feature
-
             delta (float) (>=0) (optional) : the multiplier of palrent labels feature
-
             theta (float) (>=0) (optional) : the multiplier of description feature
-
+            cutoff (float) (>=0) (optional) : the cutoff
             quiet (boolean) (optional) : set to not print unnecessary message
 
         Functions:
@@ -83,6 +75,7 @@ class NLIMED:
         except:
             raise Error("  Error: cannot instantiate annotator, try other parser {stanford, nltk, ncbo}")
         self.__sparqlGen = SPARQLGenerator(vargs['repo'])
+        pass
 
     def __getValidArgs(self, **vargs):
         """
@@ -100,12 +93,13 @@ class NLIMED:
               - [gamma g>=0]
               - [delta d>=0]
               - [theta t>=0]
+              - [cutoff c>=0]
               - [quite boolean]
             example:
               minimum call:
                 NLIMED(repo='pmr', parser='stanford')
               complete call:
-                NLIMED(repo='pmr', parser='stanford', pl=1, alpha=4, beta=0.7, gamma=0.5, delta=0.8, theta=0.01, quite=True)
+                NLIMED(repo='pmr', parser='stanford', pl=1, alpha=4, beta=0.7, gamma=0.5, delta=0.8, theta=0.01, cutoff=1, quite=True)
             """
         if all(key in vargs.keys() for key in __dictArgsMandatory__):
             # check mandatory arguments
@@ -257,8 +251,11 @@ class NLIMED:
         if format == 'json':
             return {'annotated': annotated, 'sparql': sparqlList, 'models': modelList}
 
-    def setWeighting(self, alpha, beta, gamma, delta, theta, pl, cutoff):
-        self.__annotator.setWeighting(alpha, beta, gamma, delta, theta, pl, cutoff)
+    def setWeighting(self, alpha, beta, gamma, delta, theta, cutoff, pl):
+        self.__annotator.setWeighting(alpha, beta, gamma, delta, theta, cutoff, pl)
 
     def getWeighting(self):
         return self.__annotator.getWeighting()
+
+    def hyperparam(self, datatTrainFile, precAt=10, isVerbose=True):
+        return self.__annotator.hyperparam(datatTrainFile, precAt, isVerbose)
