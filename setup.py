@@ -24,6 +24,7 @@ setuptools.setup(
         'SPARQLWrapper',
         'pandas',
         'stanza',
+        'benepar',
         ],
     entry_points = {
         "console_scripts": [

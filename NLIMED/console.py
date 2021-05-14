@@ -17,10 +17,10 @@ def runTerminal():
         getArguments()
 
 def runApp():
-    from NLIMED.NLIMED import NLIMED
+    from nlimed.nlimed import nlimed
     def getResult(**vargs):
         print('\nREPOSITORY: ' + vargs['repo'].upper())
-        nlimed = NLIMED(**vargs)
+        nlimed = nlimed(**vargs)
         if vargs['show'] == 'models':
             nlimed.getModels(vargs['query'], 'print')
         if vargs['show'] == 'sparql':
@@ -44,32 +44,33 @@ def setupSystem():
         if sys.argv.index("--apikey")+1 < len(sys.argv) and sys.argv.index("--corenlp-home")+1 < len(sys.argv):
             apikey = sys.argv[sys.argv.index("--apikey")+1]
             corenlp_home = sys.argv[sys.argv.index("--corenlp-home")+1]
-            from NLIMED.NLIMED import config
+            from nlimed.nlimed import config
             config(apikey, corenlp_home)
             print("  configuration succeed")
         else:
             print("  error config")
-            print("  example: $ NLIMED --config --apikey {your-ncbo-api-key} --corenlp-home {CoreNLP-folder}")
+            print("  example: $ nlimed --config --apikey {your-ncbo-api-key} --corenlp-home {CoreNLP-folder}")
     else:
         print("  error config")
-        print("  example: $ NLIMED --config --apikey {your-ncbo-api-key} --corenlp-home {CoreNLP-folder}")
+        print("  example: $ nlimed --config --apikey {your-ncbo-api-key} --corenlp-home {CoreNLP-folder}")
 
 def buildIndex():
     repo = sys.argv[2]
     ontologies = sys.argv[3]
+
     if repo in ['pmr', 'bm', 'bm-omex']:
-        from NLIMED.rdf_graph_index import  IndexSPARQL
-        from NLIMED.text_feature_index import IndexAnnotation
+        from nlimed.rdf_graph_index import  IndexSPARQL
+        from nlimed.text_feature_index import IndexAnnotation
         # idxSparql = IndexSPARQL(repo)
         # idxSparql.buildIndex(*sys.argv)
         # create Index ANNOTATION and inverted index
         idxAnnotation = IndexAnnotation(repo, ontologies)
-        idxAnnotation.collectClassAttributes()
+        # idxAnnotation.collectClassAttributes()
         idxAnnotation.developInvertedIndex()
     else:
         print("  error indexing")
-        print('  pmr: $ NLIMED --build-index pmr "{location-of-ontology-files}"')
-        print('  bm : $ NLIMED --build-index bm "{location-of-ontology-files}" "{location-of-RDF-files}"')
+        print('  pmr: $ nlimed --build-index pmr "{location-of-ontology-files}"')
+        print('  bm : $ nlimed --build-index bm "{location-of-ontology-files}" "{location-of-RDF-files}"')
 
 def hyperparam():
     """ generate hyperparameter and save it in Files
@@ -79,7 +80,7 @@ def hyperparam():
                - preff/header file to be saved
                - destination folder
                - parser
-        how to run: NLIMED --hyperparam pmr "DataTest" 9 pure "dest" stanford
+        how to run: nlimed --hyperparam pmr "DataTest" 9 pure "dest" CoreNLP
     """
     repo = sys.argv[2]
     datatTrainFile = sys.argv[3]
@@ -87,8 +88,8 @@ def hyperparam():
     preffix = sys.argv[5]
     destination = sys.argv[6]
     parser = sys.argv[7]
-    from NLIMED.NLIMED import NLIMED
-    nli = NLIMED(repo=repo, parser=parser)
+    from nlimed.nlimed import nlimed
+    nli = nlimed(repo=repo, parser=parser)
     stats = nli.hyperparam(datatTrainFile, precAt)
     import json, time
     filename = destination+preffix+"_"+str(precAt) + "_" + parser+ "_" + str(time.time()) + ".json"
@@ -96,7 +97,7 @@ def hyperparam():
         json.dump(stats, fp)
 
 def getArguments():
-    from NLIMED import __dictArgsOptional__, __dictArgsMandatory__, __dictDefArgsVal__
+    from nlimed import __dictArgsOptional__, __dictArgsMandatory__, __dictDefArgsVal__
     parser = argparse.ArgumentParser()
     parser.add_argument('-r', '--repo', required=True,
                         help='repository name', choices=__dictArgsMandatory__['repo'])

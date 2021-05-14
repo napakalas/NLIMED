@@ -340,21 +340,24 @@ class IndexAnnotation(GeneralNLIMED, GeneralNLP):
 
         inv_index = {}
         inv_index_onto = {}
-        for key, value in dataObo.items():
+        print("Extract %d class ontologies"%len(dataObo), flush=True)
+        for count, (key, value) in enumerate(dataObo.items()):
             for featName, featVal in value.items():
                 if featName not in self.__featureTypes: continue
                 indexPos = self.__featureTypes.index(featName)
 
                 if isinstance(featVal, str):featVal = [featVal] # the data type of prefered label is string
                 # else:featVal += [value['prefLabel']] # anticipate empty synonym, description, and parent label
-                # try collapse features  except prefered lable:
+                # else:featVal += [value['prefLabel']+value['prefLabel']] # anticipate empty synonym, description, and parent label
+                # elif len(featVal)==0: featVal += [value['prefLabel']]
+
+                # try collapse features  except prefered label:
                 # if indexPos == 0: featVal = [featVal]
                 # elif indexPos == 2: featVal += value[self.__featureTypes[indexPos-1]] + value[self.__featureTypes[indexPos+1]]
                 # else: featVal = []
 
                 # if indexPos == 0: featVal = [featVal] + value[self.__featureTypes[1]]
                 # elif indexPos == 1: continue
-
 
                 deepDependency = self.getDictDeepDependency(featVal)
                 feature = set()
@@ -370,10 +373,13 @@ class IndexAnnotation(GeneralNLIMED, GeneralNLP):
                     if link not in inv_index_onto:
                         inv_index_onto[link] = [0]*len(self.__featureTypes)+[0,0]
                     inv_index_onto[link][indexPos] = len(feature)
+            print(count if count%50==0 or count==len(dataObo)-1 else '.' if count%11==0 else '', flush=True, end='')
+        print('Finish extract class ontologies')
 
         # extract textual feature in description for each subject
+        print("Extract textual features in cellml, sedml, or rdf description for %d sbj-obj pairs"%len(idx_sbj_obj), flush=True)
         dictSbjTermFreq = {}
-        for subject, objects in idx_sbj_obj.items():
+        for count, (subject, objects) in enumerate(idx_sbj_obj.items()):
             setText = set()
             dictTerm = {}
             for idObj in objects:
@@ -388,8 +394,12 @@ class IndexAnnotation(GeneralNLIMED, GeneralNLP):
                     else:
                         dictTerm[term] += 1
             dictSbjTermFreq[subject] = dictTerm
+            print(count if count%50==0 or count==len(dataObo)-1 else '.' if count%11==0 else '', flush=True, end='')
+        print("Finish extract textual features in cellml, sedml, or rdf description", flush=True)
+
         # construct textual index
-        for sbjId, termFreq in dictSbjTermFreq.items():
+        print("Construct %d textual index"%len(dictSbjTermFreq), flush=True)
+        for count, (sbjId, termFreq) in enumerate(dictSbjTermFreq.items()):
             listObjId = idx_sbj_obj[sbjId]
             for objId in listObjId:
                 for term, freq in termFreq.items():
@@ -406,6 +416,9 @@ class IndexAnnotation(GeneralNLIMED, GeneralNLP):
                 else:
                     inv_index_onto[idx_id_object[str(objId)]][-2] += 1
                     inv_index_onto[idx_id_object[str(objId)]][-1] += len(termFreq)
+            print(count if count%50==0 or count==len(dataObo)-1 else '.' if count%11==0 else '', flush=True, end='')
+        print('Finish construct textual index')
+
         self._dumpJson(inv_index, 'indexes', self.repository + '_inv_index')
         self._dumpJson(inv_index_onto, 'indexes', self.repository + '_inv_index_onto')
 

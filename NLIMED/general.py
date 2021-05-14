@@ -133,7 +133,12 @@ class GeneralNLP():
         """
         # convert input phrase into string when it is a list
         if isinstance(phrase, list):
-            phrase = ' .'.join(phrase)
+            phrases = phrase;
+            for i, phrase in enumerate(phrases):
+                phrases[i] = phrase.strip()[:-1] if phrase.strip().endswith('.') else phrase.strip()
+            phrase = '\n\n'.join(phrases) # using \n\n to make sure sentence separation
+        else:
+            phrase = phrase.strip()[:-1] if phrase.strip().endswith('.') else phrase.strip()
         # proceed when the phrase length is not 0
         if len(phrase.strip()) > 0:
             doc = self.nlp(phrase)
