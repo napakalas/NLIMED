@@ -1,0 +1,11 @@
+.DS_Store
+*.pyc
+*.log
+/__pycache__/
+config.txt
+test.py
+/NLIMED.egg-info/
+/build/
+/dist/
+/NLIMED/tmp/
+/NLIMED/rdf/
