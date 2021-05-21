@@ -9,3 +9,7 @@ test.py
 /dist/
 /NLIMED/tmp/
 /NLIMED/rdf/
+/dataSource/
+/saveJson/
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
