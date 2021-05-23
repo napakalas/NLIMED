@@ -46,7 +46,7 @@ def download():
     import benepar
     if not os.path.exists(os.path.join(nltk_rsc, 'models', 'benepar_en3')):
         benepar.download('benepar_en3')
-        
+
 class NLIMED:
     """
     NLIMED: Natural Language Interface Model Entities Discovery

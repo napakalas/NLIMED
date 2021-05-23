@@ -3,7 +3,7 @@ Natural Language Interface for Model Entity Discovery (NLIMED) is an interface t
 
 In general, NLIMED works by converting natural language query into SPARQL, so it may help users by avoiding the rigid syntax of SPARQL, query path consisting multiple predicates, and detail knowledge about ontologies.
 
-Note: model entities extracted from BioModels are those having ontologies indexed by BioPortal.
+Note: model entities extracted from BioModels are those having ontology classes indexed by BioPortal.
 
 License :: OSI Approved :: GNU General Public License (GPL)
 
@@ -34,39 +34,51 @@ As an alternative, you can clone and download this github repository and use the
 ## Configuration
 
 NLIMED implements CoreNLP Parser, Benepar Parser, and NCBO parser. You may select one of them for your system.
-  * NLTK Parser:
-    - NLTK is automatically deploy as a dependency.
-  * CoreNLP Parser:
+  * Benepar, Stanza, xStanza:
+    - automatically deploy as a dependency.
+  * CoreNLP:
     - Download the [CoreNLP](https://stanfordnlp.github.io/CoreNLP/download.html) zip file and then extract it on your deployment folder.
     - Based on stanford-corenlp version downloaded, you will find a different zip file and extracted folder names. For example, in this works, we get:
       - a zip file : stanford-corenlp-full-2018-10-05.zip
       - a folder   : stanford-corenlp-full-2018-10-05
-  * Stanza:
-    - Stanza is automatically deploy as a dependency.
-  * NCBO parser:
+  * NCBO :
     - You have to get a [bioportal](https://bioportal.bioontology.org/help#Getting_an_API_key) apikey  and run the NLIMED config command.
 
   * **Configuring CoreNLP and NCBO parsers**
     If you intent to implement NLTK only, you don't need to configure. NLIMED configuration is needed for CoreNLP and NCBO parsers.
-    - Configuration using command prompt or terminal, use this syntax:
-
-      ```
-      NLIMED --config --apikey {your-ncbo-api-key} --corenlp-home {CoreNLP-folder-full-path}
-      ```
-      As an example if your NCBO apikey is "fc5d5241-1e8e-4b44-b401-310ca39573f6" and your CoreNLP folder is "/path/stanford-corenlp-full-2018-10-05/", the call will be:
-      ```
-      NLIMED --config --apikey "fc5d5241-1e8e-4b44-b401-310ca39573f6" --corenlp-home "/Users/user1/Documents/CoreNLP NLP/stanford-corenlp-full-2018-10-05/"
-      ```
     - Configuration usin python code, example:
 
-      ```python
-      from NLIMED import config
-      config(apikey='fc5d5241-1e8e-4b44-b401-310ca39573f6', corenlp_home='/Users/user1/Documents/CoreNLP NLP/stanford-corenlp-full-2018-10-05/')
+        ```python
+        from NLIMED import config
+        config(apikey='fc5d5241-1e8e-4b44-b401-310ca39573f6', corenlp_home='/Users/user1/Documents/CoreNLP NLP/stanford-corenlp-full-2018-10-05/')
+        ```
+        Show configuration:
+        ```python
+        from NLIMED import getConfig
+        getConfig()
+        ```
+
+    - Configuration using command prompt or terminal, use this syntax:
+
+        ```
+        NLIMED --config --apikey {your-ncbo-api-key} --corenlp-home {CoreNLP-folder-full-path}
+        ```
+        As an example if your NCBO apikey is "fc5d5241-1e8e-4b44-b401-310ca39573f6" and your CoreNLP folder is "/path/stanford-corenlp-full-2018-10-05/", the call will be:
+        ```
+        NLIMED --config --apikey "fc5d5241-1e8e-4b44-b401-310ca39573f6" --corenlp-home "/Users/user1/Documents/CoreNLP NLP/stanford-corenlp-full-2018-10-05/"
+        ```
+
+  * **Download required data from dependencies**
+
+    - Jupyter
+    Dowload required data
+    ```python
+    from NLIMED import download
+    download()
+    ```
+    - Command prompt
       ```
-      Show configuration:
-      ```python
-      from NLIMED import getConfig
-      getConfig()
+      NLIMED --download
       ```
 
 ## Issues
@@ -93,37 +105,26 @@ NLIMED implements CoreNLP Parser, Benepar Parser, and NCBO parser. You may selec
 
 ## Experiment
 We conducted an experiment to measure NLIMED performance in term of:
-1. precision, recall and F-Measure
-2. comparison to NCBO Annotator, and
-3. features contribution
+1. Annotating natural language query to ontology classes
+2. NLIMED behaviour to native query in PMR
 
-You can get the [experiment](https://github.com/napakalas/NLIMED/tree/master/experiment) code and DataTest from this repository. Run the code using Jupyter Notebook.
+The experiment is available at:
+1. [Jupyter](https://github.com/napakalas/NLIMED/tree/experiment)
+2. [Colab](https://colab.research.google.com/drive/1xq3ewKIT9pHD0AveWuYy2cpJvG4oLjDR?usp=sharing)
 
 ## How NLIMED works?
 Here is the process inside NLIMED converting natural language query (NLQ) and SPARQL and then retrieving model entities from biomodel repositories:
-1. NLQ Annotation -- Annotating NLQ to ontologies
+1. NLQ Annotation -- Annotating NLQ to ontology classes
 
-    - NLQ is parsed using selected parser (CoreNLP, NLTK, or NCBO), resulting candidate noun phrases (CNPs).
-    - Measuring association level of each CNP to ontologies. The measurement utilises four type of textual features, i.e. preferred label, synonym, description, and local definition by this formula:
-
-    ![Image](https://raw.githubusercontent.com/napakalas/NLIMED/master/resource/Eq-NLIMED.png?raw=true)
-
-    where:
-      - <code>p<sub>i</sub>, s<sub>i</sub>, and d<sub>i</sub></code> are the present (1) or the absent (0) of term in preffered label, synonym, and definition consecutively.
-      - <code>f<sub>i</sub></code> is the number of term in description.
-      - <code>lp<sub>i</sub>, ls<sub>i</sub>, ld<sub>i</sub>, and lf<sub>i</sub></code> are the number of terms in preffered label, synonym, definition, and description consecutively.
-      - <code>nt</code> is the number of terms in a phrase
-      - <code>N</code> is the number of ontologies having the term
-      - <code>S</code> is the number of model entities in the collection.
-      - <code>ts<sub>i</sub></code> is the number of model entities having the term
-      - <code>&alpha;, &beta;, &gamma; &delta;, and &theta;</code> are multipliers to set the features importance level. The multipliers values are decided empirically based on the repositories.
-
+    - NLQ is parsed using selected parser (CoreNLP, NLTK, NCBO, Stanza, or xStanza), resulting candidate noun phrases (CNPs).
+    - Measuring association level of each CNP to ontology classes. The measurement utilises five textual features, i.e. preferred label, synonym, definition,, parent label (from ontology class) and local definition (from biosimulation model)
     - Select CNPs with highest association, having longest term, and not overlapping with other CNP. The selected CNPs should cover all terms in NLQ.
-    - Select the top pl of ontologies from selected CNPs
-    - Combine all possible ontologies with no overlapping CNPs
+    - Filter out CNP having low association to ontology class (<cutoff)
+    - Select the top pl of ontology classes from selected CNPs
+    - Combine all possible ontology classes with no overlapping CNPs
 
 2. SPARQL Generation
-    - Construct SPARQLs for each ontotology combinations
+    - Construct SPARQLs for each ontotology class combinations
 
 3. Retrieve model entities by sending each SPARQLs to model repository SPARQL endpoints.
 
@@ -142,7 +143,7 @@ optional arguments:
   -h, --help            show this help message and exit
   -r {pmr,bm,all}, --repo {pmr,bm,all}
                         repository name
-  -p {CoreNLP,Benepar,ncbo}, --parser {CoreNLP,Benepar,ncbo}
+  -p {corenlp,benepar,stanza,xstanza,ncbo}, --parser {corenlp,benepar,stanza,xstanza,ncbo}
                         parser tool
   -q QUERY, --query QUERY
                         query -- any text containing words
@@ -158,27 +159,33 @@ optional arguments:
                         Minimum delta is 0
   -t THETA, --theta THETA
                         Minimum theta is 0
+  -c CUTOFF, --cutoff CUTOFF
+                        Minimum cutoff is 0
+  -tf TFMODE, --tfMode TFMODE
+                        tf mode calculation, [1,2,3]
 ```
 Here is the description of those arguments:
 * -r {pmr,bm,all} or --repo {pmr,bm,all} (mandatory) is the name of repository. pmr is the Physiome Repository Model, bm is BioSimulations, all is for both repositories
-* -p {CoreNLP,Benepar,ncbo} or --parser {CoreNLP,Benepar,ncbo} (mandatory) is the type of parser for query annotation.
+* -p {corenlp,benepar,stanza,xstanza,ncbo} or --parser {CoreNLP,Benepar,ncbo} (mandatory) is the type of parser for query annotation.
 * -q QUERY or --query QUERY (mandatory) is the query text. For a multi words query, the words should be double quoted.
-* -pl PL (optional) is precision level indicating the number of ontologies used to construct SPARQL. Larger number will utilised more ontologies which may generate more SPARQL and produce more results. Minimum value is 1. Default value is 1.
+* -pl PL (optional) is precision level indicating the number of ontology classes used to construct SPARQL. Larger number will utilised more ontology cllasses which may generate more SPARQL and produce more results. Minimum value is 1. Default value is 1.
 * -s {models,sparql,annotation,verbose} or --show {models,sparql,annotation,verbose} (optional) is for selecting presented results. models shows models, sparql shows all possible SPARQLs, annotation shows annotation results, and verbore shows annotation results, SPARQLs, and models
-* -a ALPHA or --alpha ALPHA (optional) is to set up the weight of preffered label feature. Minimum alpha is 0. Default value is 4.
-* -b BETA or --beta BETA (optional) is to set up the weight of synonym feature. Minimum beta is 0. Default value is 0.7.
--g GAMMA or --gamma GAMMA (optional) is to set up the weight of definition feature. Minimum gamma is 0. Default value is 0.5.
--d DELTA, --delta DELTA (optional) is to set up the weight of parent labels feature. Minimum gamma is 0. Default value is 0.8.
--t THETA, --theta DELTA (optional) is to set up the weight of description feature. Minimum theta is 0. Default value is 0.01.
+* -a ALPHA or --alpha ALPHA (optional) is to set up the weight of preffered label feature. Minimum alpha is 0. Default value is 3.0.
+* -b BETA or --beta BETA (optional) is to set up the weight of synonym feature. Minimum beta is 0. Default value is 3.0.
+* -g GAMMA or --gamma GAMMA (optional) is to set up the weight of definition feature. Minimum gamma is 0. Default value is 0.1.
+* -d DELTA, --delta DELTA (optional) is to set up the weight of parent labels feature. Minimum gamma is 0. Default value is 0.1.
+* -t THETA, --theta THETA (optional) is to set up the weight of description feature. Minimum theta is 0. Default value is 0.38.
+* -c CUTOFF, --cutoff (optional) is the minimum degree of association between a phrases and a ontology class used. Minimum cutoff is 0. Default value is 1.
+* -tf tfMode, --tfMode (optional) is the term frequency calculation mode, 1 = all features with dependency term, 2 = all features without dependency term, 3 = highest feature with dependency term. Devault value is 3.
 
 ### Running example
 * running with minimum setup for repository = Physiome Model Repository, parser = NLTK, query = "flux of sodium", and other default arguments values:
   ```
   NLIMED -r pmr -p Benepar -q "flux of sodium"
   ```
-* running with full setup for repository=BioModels, parser=CoreNLP, query="flux of sodium", precision level = 2, alpha = 2, beta = 1, gamma = 1, and delta = 1, theta = 0.01
+* running with full setup for repository=BioModels, parser=CoreNLP, query="flux of sodium", precision level = 2, alpha = 2, beta = 1, gamma = 1, and delta = 1, theta = 0.4, cutoff = 1.0, tfMode = 3
   ```
-  NLIMED -r bm -p CoreNLP -q "flux of sodium" -pl 2 -a 2 -b 1 -g 1 -d 1
+  NLIMED -r bm -p CoreNLP -q "flux of sodium" -pl 2 -a 2 -b 1 -g 1 -d 1 -t 0.4 -c 1 -tf 3
   ```
   Note: running with CoreNLP parser may cause delay local server startup for the first run. However, for the next run, the delay is disappeared.
 
@@ -192,7 +199,7 @@ Here is the description of those arguments:
 
 ## Utilising NLIMED in your Python code
 
-The main class for retrieving model entities from repositories is NLIMED in NLIMED.py. Utilising this class, we can annotate query into ontologies, get all possible SPARQL, and get model entities. We suggest you to create one NLIMED object for all your queries since it will reuse the loaded indexes so it can save your device resources.
+The main class for retrieving model entities from repositories is NLIMED in NLIMED.py. Utilising this class, we can annotate query into ontology classes, get all possible SPARQL, and get model entities. We suggest you to create one NLIMED object for all your queries since it will reuse the loaded indexes so it can save your device resources.
 
 ### Get Model Entities
 The following codes are used to retrieve model entities from the PMR or Biomodels.
@@ -232,7 +239,7 @@ The following codes are used to retrieve model entities from the PMR or Biomodel
 * It also possible to increase the precision level, so NLIMED can show more results. Here we are returning model entities from the PMR using CoreNLP parser and precision level 2, alpha=4, beta=0.7, gamma=0.5, delta=0.8, theta=0.01.
   ```python
   from NLIMED import NLIMED
-  nlimed = NLIMED(repo='pmr', parser='CoreNLP', pl=2, alpha=4, beta=0.7, gamma=0.5, delta=0.8, theta=0.01)
+  nlimed = NLIMED(repo='pmr', parser='CoreNLP', pl=2, alpha=4, beta=0.7, gamma=0.5, delta=0.8, theta=0.1, cutoff=1, tfMode=3)
   query = 'mitochondrial calcium ion transmembrane transport'
   result = nlimed.getModels(query=query,format='json')
 
@@ -246,6 +253,8 @@ The following codes are used to retrieve model entities from the PMR or Biomodel
   - gamma (optional) : definition weight, the minimum value is 0
   - delta (optional) : parent labels weight, the minimum value is 0
   - theta (optional) : description weight, the minimum value is 0
+  - cutoff (optional) : minimum degree of asociation, the minimum value is 0
+  - tfMode (optional) : the term frequency calculation mode, [1,2,3]
   - query : query text
   - format : the returning format data {'json','print'}
   """
@@ -409,7 +418,7 @@ The following codes are used to retrieve model entities from the PMR or Biomodel
     ]
   }
   ```
-* Get model entities from BioModels with precision level 2, alpha=4, beta=0.7, gamma=0.5, delta=0.8, theta=0.01 and NLTK parser
+* Get model entities from BioModels with precision level 2, alpha=4, beta=0.7, gamma=0.5, delta=0.8, theta=0.01 and Beneparvv parser
 ```python
 from NLIMED import NLIMED
 nlimed = NLIMED(repo='bm', parser='Benepar', pl=2, alpha=4, beta=0.7, gamma=0.5, delta=0.8, theta=0.01)
@@ -468,7 +477,7 @@ In a case you just need to utilise the annotation function, you can use getAnnot
     ]
   }
   ```
-  The query is separated into three phrases, then each phrase is classify into an ontology. There is a score 5.061734018829371 indicating the weight of ontologies combination.
+  The query is separated into three phrases, then each phrase is classify into ontology classes. There is a score 5.061734018829371 indicating the weight of ontology classes combination.
 
 * Code example to annotated query "concentration of potassium in the portion of tissue fluid" in the PMR using CoreNLP parser, pl=2, alpha=4, beta=0.7, gamma=0.5, delta=0.8, theta=0.01
   ```python
@@ -509,7 +518,7 @@ In a case you just need to utilise the annotation function, you can use getAnnot
     ]
   }
   ```
-  Just the same as the previous result, the query is separated into three phrases, then each phrase is classify into an ontology. Since we use higher precisin level, the function presents more ontologies combination with a different score. Higher score means higher probability of relevant annotation.
+  Just the same as the previous result, the query is separated into three phrases, then each phrase is classify into ontology classes. Since we use higher precisin level, the function presents more ontology classes combination with a different score. Higher score means higher probability of relevant annotation.
 
 ### Get SPARQL
 It is also possible to get SPARQL only without model entities. It utilise getSparql function which generated all possible SPARQL based on annotation results.
@@ -535,7 +544,7 @@ It is also possible to get SPARQL only without model entities. It utilise getSpa
         OPTIONAL{?Model_entity <http://purl.org/dc/terms/description> ?desc .} }}'
   ]
   ```
-* Get SPARQL code for query "concentration of potassium in the portion of tissue fluid" in the PMR using CoreNLP parser with precision level 2, alpha=4, beta=0.7, gamma=0.5, delta=0.8, theta=0.01 and NLTK parser
+* Get SPARQL code for query "concentration of potassium in the portion of tissue fluid" in the PMR using CoreNLP parser with precision level 2, alpha=4, beta=0.7, gamma=0.5, delta=0.8, theta=0.01 and CoreNLP parser
   ```python
   from NLIMED import NLIMED
   nlimed = NLIMED(repo='pmr', parser='CoreNLP', pl=2, alpha=4, beta=0.7, gamma=0.5, delta=0.8, theta=0.01)
@@ -561,9 +570,9 @@ It is also possible to get SPARQL only without model entities. It utilise getSpa
 All indexes are already provided in this project. However, if you want to recreate all indexes you can use the following script on command prompt or terminal. Please be patient, it may take times to be finished.
 
 ### Indexing the pmr
-Download all required ontologies for indexing from (https://bioportal.bioontology.org/).
+Download all required ontology dictionaries for indexing from (https://bioportal.bioontology.org/).
 Preferably is csv files but obo files are working.
-List of ontologies:
+List of ontology dictionaries:
 'SO','PW','PSIMOD','PR','PATO','OPB','NCBITAXON','MAMO',
 'FMA','EFO','EDAM','ECO','CL','CHEBI','BTO','SBO',
 'UNIPROT','KEGG','EC-CODE','ENSEMBL','GO'

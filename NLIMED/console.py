@@ -9,6 +9,8 @@ def runTerminal():
         runApp()
     elif '--config' in sys.argv:
         setupSystem()
+    elif '--download' in sys.argv:
+        downloadData()
     elif '--build-index' in sys.argv:
         buildIndex()
     elif '--hyperparam' in sys.argv:
@@ -54,6 +56,9 @@ def setupSystem():
         print("  error config")
         print("  example: $ nlimed --config --apikey {your-ncbo-api-key} --corenlp-home {CoreNLP-folder}")
 
+def downloadData():
+    download()
+
 def buildIndex():
     repo = sys.argv[2]
     ontologies = sys.argv[3]
@@ -61,11 +66,11 @@ def buildIndex():
     if repo in ['pmr', 'bm', 'bm-omex']:
         from nlimed.rdf_graph_index import  IndexSPARQL
         from nlimed.text_feature_index import IndexAnnotation
-        # idxSparql = IndexSPARQL(repo)
-        # idxSparql.buildIndex(*sys.argv)
+        idxSparql = IndexSPARQL(repo)
+        idxSparql.buildIndex(*sys.argv)
         # create Index ANNOTATION and inverted index
         idxAnnotation = IndexAnnotation(repo, ontologies)
-        # idxAnnotation.collectClassAttributes()
+        idxAnnotation.collectClassAttributes()
         idxAnnotation.developInvertedIndex()
     else:
         print("  error indexing")
@@ -97,7 +102,7 @@ def hyperparam():
         json.dump(stats, fp)
 
 def getArguments():
-    from nlimed import __dictArgsOptional__, __dictArgsMandatory__, __dictDefArgsVal__
+    from NLIMED import __dictArgsOptional__, __dictArgsMandatory__, __dictDefArgsVal__
     parser = argparse.ArgumentParser()
     parser.add_argument('-r', '--repo', required=True,
                         help='repository name', choices=__dictArgsMandatory__['repo'])
@@ -122,7 +127,11 @@ def getArguments():
     parser.add_argument(
         '-d', '--delta', default=__dictDefArgsVal__['delta'], help='Minimum delta is 0', type=__dictArgsOptional__['delta'])
     parser.add_argument(
-        '-t', '--theta', default=__dictDefArgsVal__['theta'], help='Minimum delta is 0', type=__dictArgsOptional__['theta'])
+        '-t', '--theta', default=__dictDefArgsVal__['theta'], help='Minimum theta is 0', type=__dictArgsOptional__['theta'])
+    parser.add_argument(
+        '-c', '--cutoff', default=__dictDefArgsVal__['cutoff'], help='Minimum cutoff is 0', type=__dictArgsOptional__['cutoff'])
+    parser.add_argument(
+        '-tf', '--tfMode', default=__dictDefArgsVal__['tfMode'], help='tf mode calculation, [1,2,3]', type=__dictArgsOptional__['tfMode'])
     args = vars(parser.parse_args())
     args['quite'] = False
     return(args)

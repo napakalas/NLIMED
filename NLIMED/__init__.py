@@ -53,5 +53,8 @@ __dictArgsOptional__ = {'show': ['models', 'sparql', 'annotation', 'verbose'], '
                         'tfMode':__pl_type__, 'quite': False}
 __dictDefArgsVal__ = {'repo': __dictArgsMandatory__['repo'][0], 'parser': __dictArgsMandatory__['parser'][0],
                       'show': __dictArgsOptional__['show'], 'pl': 1,
-                      'alpha': 0.4, 'beta': 0.1, 'gamma': 1.0, 'delta': 1.0, 'theta': 1.0,
-                      'cutoff': 1, 'tfMode':1, 'quite': False}
+                      'alpha': 3.0, 'beta': 3.0, 'gamma': 0.1, 'delta': 0.1, 'theta': 0.38,
+                      'cutoff': 1, 'tfMode':3, 'quite': False}
+
+# download required data from dependencies
+download()
