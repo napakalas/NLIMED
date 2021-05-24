@@ -30,8 +30,37 @@ which is included by reference.
 
 __license__ = "License :: OSI Approved :: GNU General Public License (GPL)"
 
+def download():
+    import os
+    from pathlib import Path as path
+    HOME_DIR = str(path.home())
+
+    # check nltk_data availability, download if not available
+    import nltk
+    nltk_rsc = os.path.join(HOME_DIR, 'nltk_data')
+    for required in [os.path.join('corpora', 'stopwords.zip'), os.path.join('taggers', 'averaged_perceptron_tagger.zip')]:
+        if not os.path.exists(os.path.join(nltk_rsc, required)):
+            print('downloading nltk: ', required[:-4])
+            nltk.download(os.path.basename(required)[:-4], quiet=True)
+
+    # check stanza_data availability, download if not available
+    import stanza
+    stanza_rsc = os.path.join(HOME_DIR, 'stanza_resources/en/ner')
+    for required in ['anatem.pt', 'bionlp13cg.pt', 'i2b2.pt', 'jnlpba.pt']:
+        if not os.path.exists(os.path.join(stanza_rsc, required)):
+            print('downloading stanza: ', required[:-3])
+            stanza.download('en', package='craft', processors={'ner': required[:-3]}, verbose=False)
+
+    # check benepar_data availability, download if not available
+    import benepar
+    if not os.path.exists(os.path.join(nltk_rsc, 'models', 'benepar_en3')):
+        print('downloading benepar: benepar_en3')
+        benepar.download('benepar_en3')
+
+download()
+
 from NLIMED.NLIMED import NLIMED
-from NLIMED.NLIMED import getConfig, config, download
+from NLIMED.NLIMED import getConfig, config
 
 # standard arguments for NLIMED setup
 def __pl_type__(x):
@@ -55,6 +84,3 @@ __dictDefArgsVal__ = {'repo': __dictArgsMandatory__['repo'][0], 'parser': __dict
                       'show': __dictArgsOptional__['show'], 'pl': 1,
                       'alpha': 3.0, 'beta': 3.0, 'gamma': 0.1, 'delta': 0.1, 'theta': 0.38,
                       'cutoff': 1, 'tfMode':3, 'quite': False}
-
-# download required data from dependencies
-download()

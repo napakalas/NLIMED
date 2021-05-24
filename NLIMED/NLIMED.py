@@ -23,30 +23,6 @@ def getConfig():
     else:
         return {"apikey":"","corenlp-home":""}
 
-def download():
-    import os
-    from pathlib import Path as path
-    HOME_DIR = str(path.home())
-
-    # check nltk_data availability, download if not available
-    import nltk
-    nltk_rsc = os.path.join(HOME_DIR, 'nltk_data')
-    for required in [os.path.join('corpora', 'stopwords.zip'), os.path.join('taggers', 'averaged_perceptron_tagger.zip')]:
-        if not os.path.exists(os.path.join(nltk_rsc, required)):
-            nltk.download(os.path.basename(required)[:-4], quiet=True)
-
-    # check stanza_data availability, download if not available
-    import stanza
-    stanza_rsc = os.path.join(HOME_DIR, 'stanza_resources/en/ner')
-    for required in ['anatem.pt', 'bionlp13cg.pt', 'i2b2.pt', 'jnlpba.pt']:
-        if not os.path.exists(os.path.join(stanza_rsc, required)):
-            stanza.download('en', package='craft', processors={'ner': required[:-3]}, verbose=False)
-
-    # check benepar_data availability, download if not available
-    import benepar
-    if not os.path.exists(os.path.join(nltk_rsc, 'models', 'benepar_en3')):
-        benepar.download('benepar_en3')
-
 class NLIMED:
     """
     NLIMED: Natural Language Interface Model Entities Discovery
