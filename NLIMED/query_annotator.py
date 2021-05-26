@@ -7,7 +7,6 @@ import operator
 import math
 import string
 from NLIMED.general import *
-from nltk.parse.corenlp import CoreNLPServer
 import collections
 import difflib
 
@@ -724,33 +723,27 @@ class CoreNLPAnnotator(Annotator):
     def __init__(self, **settings):
         super(CoreNLPAnnotator, self).__init__(**settings)
         try:
-            connectionStatus = urllib.request.urlopen("http://localhost:9000").getcode()
-            if connectionStatus == 200:
-                if 'quite' not in settings:
-                    print('CoreNLP server has been started')
-                elif not settings['quite']:
-                    print('CoreNLP server has been started')
+            connectionStatus = urllib.request.urlopen(self.corenlp_ep).getcode()
+            # if connectionStatus == 200:
+            #     print('CoreNLP server has been started')
         except:
             try:
                 print('Please wait, try to start CoreNLP server')
-                core, model = self.__getCoreAndModel()
-                self.server = CoreNLPServer(core, model,)
-                self.server.start()
+                print(self.corenlp_home)
+                import os
+                os.environ["CORENLP_HOME"] = self.corenlp_home
+                from stanza.server import CoreNLPClient
+                client = CoreNLPClient(
+                    annotators=['tokenize','ssplit', 'pos', 'lemma', 'ner'],
+                    memory='4G',
+                    endpoint=self.corenlp_ep,
+                    be_quiet=True)
+                print(client)
+                client.start()
+                import time; time.sleep(10) # starting usually needs time, so wait until ready
                 print('Starting server is succeed')
             except:
-                print('CoreNLP server cannot be started, use another parser {Benepar,ncbo}')
-
-    def __getCoreAndModel(self):
-        import os
-        for file in os.listdir(self.corenlp_home):
-            if file.startswith("stanford-corenlp") and file.endswith("models.jar"):
-                model = os.path.join(self.corenlp_home, file)
-            if file.startswith("stanford-corenlp") and not any(suff in file for suff in ["models.jar","javadoc.jar","sources.jar"]):
-                core = os.path.join(self.corenlp_home, file)
-        try:
-            return core,model
-        except:
-            print("Files core or model are not found")
+                print('CoreNLP server cannot be started, use another parser {Benepar,ncbo,Stanza, xStanza}')
 
     def annotate(self, query):
         phrases = self._getPhrases(query)
@@ -766,7 +759,7 @@ class CoreNLPAnnotator(Annotator):
         """
         # query = query.translate(str.maketrans(
         #     string.punctuation, ' ' * len(string.punctuation))).lower()
-        parser = CoreNLPParser()
+        parser = CoreNLPParser(url=self.corenlp_ep)
         tree = ParentedTree.convert(next(parser.raw_parse(query)))
         # print(tree)
         phrases = {}

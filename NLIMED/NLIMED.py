@@ -1,14 +1,40 @@
 from NLIMED.query_annotator import CoreNLPAnnotator, BeneparAnnotator, OBOLIBAnnotator, StanzaAnnotator, MixedAnnotator
 from NLIMED.sparql_generator import SPARQLGenerator
 
-def config(apikey, corenlp_home):
+def config(parsers={'ncbo':'fc5d5241-1e8e-4b44-b401-310ca39573f6', 'coreNLP':'~/corenlp'}):
+    """
+        Configuring apikey for ncbo and/or
+        installing coreNLP and start the server
+        Input: - parsers is a dictionary consisting of pairs of parser name and
+                 its keyword or installation location
+        Example: - config(parsers={'ncbo':'fc5d5241-1e8e-4b44-b401-310ca39573f6', 'coreNLP':'~/corenlp'})
+                 - config() --> configuration with default value
+    """
     import json
     import os.path
     currentPath = os.path.dirname(os.path.realpath(__file__))
-    file = os.path.join(currentPath,"config.txt")
-    data = {"apikey":apikey,"corenlp-home":corenlp_home}
-    with open(file, 'w') as fp:
-        json.dump(data, fp)
+    configFile = os.path.join(currentPath,'config.txt')
+
+    # setup coreNLP server if the installation location is available
+    if 'coreNLP' in parsers:
+
+        # make sure the input is abs path, if not, convert it to abs path
+        from os.path import expanduser
+        parsers['coreNLP'] = expanduser(parsers['coreNLP'])
+        if not os.path.isabs(parsers['coreNLP']):
+            parsers['coreNLP'] = expanduser('~/' + parsers['coreNLP'])
+
+        # install when it it not yet installed
+        if not os.path.isdir(parsers['coreNLP']):
+            print('Relax ... installing CoreNLP take minutes')
+            import stanza
+            stanza.install_corenlp(dir=parsers['coreNLP'])
+            parsers['coreNLP_EP'] = 'http://localhost:9001'
+        else:
+            print('CoreNLP already installed')
+
+    with open(configFile, 'w') as fp:
+        json.dump(parsers, fp)
 
 def getConfig():
     import json
@@ -21,7 +47,34 @@ def getConfig():
             data = json.load(fp)
         return data
     else:
-        return {"apikey":"","corenlp-home":""}
+        return {}
+
+def download():
+    import os
+    from pathlib import Path as path
+    HOME_DIR = str(path.home())
+
+    # check nltk_data availability, download if not available
+    import nltk
+    nltk_rsc = os.path.join(HOME_DIR, 'nltk_data')
+    for required in [os.path.join('corpora', 'stopwords.zip'), os.path.join('taggers', 'averaged_perceptron_tagger.zip')]:
+        if not os.path.exists(os.path.join(nltk_rsc, required)):
+            print('downloading nltk: ', required[:-4])
+            nltk.download(os.path.basename(required)[:-4], quiet=True)
+
+    # check stanza_data availability, download if not available
+    import stanza
+    stanza_rsc = os.path.join(HOME_DIR, 'stanza_resources/en/ner')
+    for required in ['anatem.pt', 'bionlp13cg.pt', 'i2b2.pt', 'jnlpba.pt']:
+        if not os.path.exists(os.path.join(stanza_rsc, required)):
+            print('downloading stanza: ', required[:-3])
+            stanza.download('en', package='craft', processors={'ner': required[:-3]}, verbose=False)
+
+    # check benepar_data availability, download if not available
+    import benepar
+    if not os.path.exists(os.path.join(nltk_rsc, 'models', 'benepar_en3')):
+        print('downloading benepar: benepar_en3')
+        benepar.download('benepar_en3')
 
 class NLIMED:
     """

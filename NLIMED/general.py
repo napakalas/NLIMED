@@ -18,13 +18,18 @@ from nltk.tokenize import RegexpTokenizer
 class GeneralNLIMED(ABC):
     def __init__(self):
         self.currentPath = os.path.dirname(os.path.realpath(__file__))
+        self.apikey = 'no-api-key'
+        self.corenlp_home = '/'
+        self.corenlp_ep = 'http://localhost:9001'
         try:
             config = self._loadJson("config.txt")
-            self.apikey = config['apikey']
-            self.corenlp_home = config['corenlp-home']
+            if 'ncbo' in config:
+                self.apikey = config['ncbo']
+            if 'coreNLP' in config:
+                self.corenlp_home = config['coreNLP']
+                self.corenlp_ep = config['coreNLP_EP']
         except:
-            self.apikey = "no-api-key"
-            self.corenlp_home = "/"
+            pass
         self.oboUrl = "http://data.bioontology.org/ontologies/"
 
     def _loadJson(self, *paths):

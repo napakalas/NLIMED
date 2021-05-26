@@ -1,4 +1,8 @@
 # NLIMED
+
+![Latest Version](https://img.shields.io/pypi/v/nlimed.svg?colorB=bc4545)
+![Python Versions](https://img.shields.io/pypi/pyversions/nlimed.svg?colorB=bc4545)
+
 Natural Language Interface for Model Entity Discovery (NLIMED) is an interface to search model entities (i.e. flux of sodium across the basolateral plasma membrane, the concentration of potassium in the portion of tissue fluid) in the biosimulation models in repositories. The interface utilises the RDF inside biosimulation models and metadata from BioPortal. Currently, the interface can retrieve model entities from the Physiome Model Repository (PMR, https://models.physiomeproject.org) and the BioModels (https://www.ebi.ac.uk/biomodels/).
 
 In general, NLIMED works by converting natural language query into SPARQL, so it may help users by avoiding the rigid syntax of SPARQL, query path consisting multiple predicates, and detail knowledge about ontologies.
@@ -8,7 +12,8 @@ Note: model entities extracted from BioModels are those having ontology classes 
 License :: OSI Approved :: GNU General Public License (GPL)
 
 ## Demo
-http://130.216.217.102/nlimed
+1. [Online web](http://130.216.217.102/nlimed)
+2. [Colab](https://colab.research.google.com/drive/1xq3ewKIT9pHD0AveWuYy2cpJvG4oLjDR#scrollTo=VYv3uMcMt6HJ) - online tutorial
 
 ## References
 The main reference of this work is: https://doi.org/10.1101/756304
@@ -31,77 +36,33 @@ As an alternative, you can clone and download this github repository and use the
   pip install -e .
   ```
 
+Follow this [Colab](https://colab.research.google.com/drive/1xq3ewKIT9pHD0AveWuYy2cpJvG4oLjDR#scrollTo=VYv3uMcMt6HJ) tutorial for easy step by step installation and utilisation.
+
 ## Configuration
 
 NLIMED implements CoreNLP Parser, Benepar Parser, and NCBO parser. You may select one of them for your system.
   * Benepar, Stanza, xStanza:
     - automatically deploy as a dependency.
-  * CoreNLP:
-    - Download the [CoreNLP](https://stanfordnlp.github.io/CoreNLP/download.html) zip file and then extract it on your deployment folder.
-    - Based on stanford-corenlp version downloaded, you will find a different zip file and extracted folder names. For example, in this works, we get:
-      - a zip file : stanford-corenlp-full-2018-10-05.zip
-      - a folder   : stanford-corenlp-full-2018-10-05
-  * NCBO :
-    - You have to get a [bioportal](https://bioportal.bioontology.org/help#Getting_an_API_key) apikey  and run the NLIMED config command.
-
-  * **Configuring CoreNLP and NCBO parsers**
-    If you intent to implement NLTK only, you don't need to configure. NLIMED configuration is needed for CoreNLP and NCBO parsers.
-    - Configuration usin python code, example:
-
-        ```python
-        from NLIMED import config
-        config(apikey='fc5d5241-1e8e-4b44-b401-310ca39573f6', corenlp_home='/Users/user1/Documents/CoreNLP NLP/stanford-corenlp-full-2018-10-05/')
-        ```
-        Show configuration:
-        ```python
-        from NLIMED import getConfig
-        getConfig()
-        ```
-
-    - Configuration using command prompt or terminal, use this syntax:
-
-        ```
-        NLIMED --config --apikey {your-ncbo-api-key} --corenlp-home {CoreNLP-folder-full-path}
-        ```
-        As an example if your NCBO apikey is "fc5d5241-1e8e-4b44-b401-310ca39573f6" and your CoreNLP folder is "/path/stanford-corenlp-full-2018-10-05/", the call will be:
-        ```
-        NLIMED --config --apikey "fc5d5241-1e8e-4b44-b401-310ca39573f6" --corenlp-home "/Users/user1/Documents/CoreNLP NLP/stanford-corenlp-full-2018-10-05/"
-        ```
-
-  * **Download required data from dependencies**
-
-    - Jupyter
-    Dowload required data
+  * To run CoreNLP and NCBO, you need to run configuration. It can be using default value
     ```python
-    from NLIMED import download
-    download()
+    from NLIMED import config
+    config()
     ```
-    - Command prompt
+    or using your own [NCBO api key](https://bioportal.bioontology.org/help#Getting_an_API_key) and self defined CoreNLP installation location
+    ```python
+    from NLIMED import config
+    config(apikey='your-api-key', corenlp_home='installation-location')
+    ```
+
+  * It is also possible to run configuration from command prompt or terminal:
+
       ```
-      NLIMED --download
+      NLIMED --config --apikey {your-ncbo-api-key} --corenlp-home {installation-location}
       ```
 
 ## Issues
 
-1. When using CoreNLP parser, you may find the following error message:
-
-    ```
-    ...
-    requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=9000): Max retries exceeded with url: /?properties=%7B%22outputFormat%22%3A+%22json%22%2C+%22annotators%22%3A+%22tokenize%2Cpos%2Clemma%2Cssplit%2Cparse%22%2C+%22ssplit.eolonly%22%3A+%22true%22%2C+%22tokenize.whitespace%22%3A+%22false%22%7D (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x00000215465682B0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))
-    ```
-    The possible cause is:
-    - You are not properly configure CoreNLP folder. Please recheck the correct location and then rerun the configuration command.
-    - In some devices, CoreNLP local web services is slowly started, so it is not ready when utise by NLIMED. You can wait for a minute then rerun your command or code.
-    - In Windows the JVM maximum memory space is between 1500 and 1600 MB, while CoreNLP is ideally run on 4GB heap memory space.
-
-    Solution:
-    You may also start the services manually on command line or terminal. Go to your CoreNLP folder and run:
-    ```
-    java -Xmx4g -cp "*" edu.stanford.nlp.pipeline.StanfordCoreNLPServer -port 9000 -timeout 15000
-    ```
-    Then check the services availability on your web browser through link: http://localhost:9000/
-
-2. Any other issues please follow [issues](https://github.com/napakalas/NLIMED/issues).
+For any issues please follows and reports [issues](https://github.com/napakalas/NLIMED/issues).
 
 ## Experiment
 We conducted an experiment to measure NLIMED performance in term of:
@@ -110,13 +71,15 @@ We conducted an experiment to measure NLIMED performance in term of:
 
 The experiment is available at:
 1. [Jupyter](https://github.com/napakalas/NLIMED/tree/experiment)
-2. [Colab](https://colab.research.google.com/drive/1xq3ewKIT9pHD0AveWuYy2cpJvG4oLjDR?usp=sharing)
+2. Colab:
+  * [NLQ Annotator Performance](https://colab.research.google.com/drive/1xq3ewKIT9pHD0AveWuYy2cpJvG4oLjDR#scrollTo=KwQAqORxsnk_)
+  * [NLIMED Behaviour on Native Query in PMR (Historical Data)](https://colab.research.google.com/drive/1xq3ewKIT9pHD0AveWuYy2cpJvG4oLjDR#scrollTo=qsEFA2pGtVZH)
 
 ## How NLIMED works?
 Here is the process inside NLIMED converting natural language query (NLQ) and SPARQL and then retrieving model entities from biomodel repositories:
 1. NLQ Annotation -- Annotating NLQ to ontology classes
 
-    - NLQ is parsed using selected parser (CoreNLP, NLTK, NCBO, Stanza, or xStanza), resulting candidate noun phrases (CNPs).
+    - NLQ is parsed using selected parser (CoreNLP, Benepar, NCBO, Stanza, or xStanza), resulting candidate noun phrases (CNPs).
     - Measuring association level of each CNP to ontology classes. The measurement utilises five textual features, i.e. preferred label, synonym, definition,, parent label (from ontology class) and local definition (from biosimulation model)
     - Select CNPs with highest association, having longest term, and not overlapping with other CNP. The selected CNPs should cover all terms in NLQ.
     - Filter out CNP having low association to ontology class (<cutoff)
@@ -179,7 +142,7 @@ Here is the description of those arguments:
 * -tf tfMode, --tfMode (optional) is the term frequency calculation mode, 1 = all features with dependency term, 2 = all features without dependency term, 3 = highest feature with dependency term. Devault value is 3.
 
 ### Running example
-* running with minimum setup for repository = Physiome Model Repository, parser = NLTK, query = "flux of sodium", and other default arguments values:
+* running with minimum setup for repository = Physiome Model Repository, parser = Benepar, query = "flux of sodium", and other default arguments values:
   ```
   NLIMED -r pmr -p Benepar -q "flux of sodium"
   ```
@@ -390,7 +353,7 @@ The following codes are used to retrieve model entities from the PMR or Biomodel
     }]
   }
   ```
-* Get model entities from BioModels with standard setting using NLTK Parser:
+* Get model entities from BioModels with standard setting using Benepar Parser:
   ```python
   from NLIMED import NLIMED
   nlimed = NLIMED(repo='bm', parser='Benepar')

@@ -47,7 +47,7 @@ def setupSystem():
             apikey = sys.argv[sys.argv.index("--apikey")+1]
             corenlp_home = sys.argv[sys.argv.index("--corenlp-home")+1]
             from nlimed.nlimed import config
-            config(apikey, corenlp_home)
+            config(parsers={'ncbo':apikey, 'coreNLP':corenlp_home})
             print("  configuration succeed")
         else:
             print("  error config")
