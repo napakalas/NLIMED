@@ -1,6 +1,3 @@
-from NLIMED.query_annotator import CoreNLPAnnotator, BeneparAnnotator, OBOLIBAnnotator, StanzaAnnotator, MixedAnnotator
-from NLIMED.sparql_generator import SPARQLGenerator
-
 def config(parsers={'ncbo':'fc5d5241-1e8e-4b44-b401-310ca39573f6', 'coreNLP':'~/corenlp'}):
     """
         Configuring apikey for ncbo and/or
@@ -120,17 +117,23 @@ class NLIMED:
         parser = vargs['parser'].lower()
         try:
             if parser == 'corenlp':
+                from NLIMED.query_annotator import CoreNLPAnnotator
                 self.__annotator = CoreNLPAnnotator(**vargs)
             elif parser == 'benepar':
+                from NLIMED.query_annotator import BeneparAnnotator
                 self.__annotator = BeneparAnnotator(**vargs)
             elif parser == 'ncbo':
+                from NLIMED.query_annotator import OBOLIBAnnotator
                 self.__annotator = OBOLIBAnnotator()
             elif parser == 'stanza':
+                from NLIMED.query_annotator import StanzaAnnotator
                 self.__annotator = StanzaAnnotator(**vargs)
             elif parser == 'xstanza':
+                from NLIMED.query_annotator import MixedAnnotator
                 self.__annotator = MixedAnnotator(**vargs)
         except:
             raise Error("  Error: cannot instantiate annotator, try other parser {CoreNLP, Benepar, ncbo}")
+        from NLIMED.sparql_generator import SPARQLGenerator
         self.__sparqlGen = SPARQLGenerator(vargs['repo'])
         pass
 
