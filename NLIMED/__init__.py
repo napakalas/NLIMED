@@ -30,23 +30,9 @@ which is included by reference.
 
 __license__ = "License :: OSI Approved :: GNU General Public License (GPL)"
 
+from NLIMED.NLIMED import config, getConfig, download
+download()
 from NLIMED.NLIMED import NLIMED
-from NLIMED.NLIMED import getConfig, config
-import os
-import nltk
-
-# check nltk_data availability, download if not available
-__required_nltk_group__ = ['taggers', 'corpora']
-__required_nltk_data__ = ['stopwords', 'averaged_perceptron_tagger']
-__available_nltk_data__ = []
-for __group__ in __required_nltk_group__:
-    try:
-        __available_nltk_data__ += os.listdir(nltk.data.find(__group__))
-    except:
-        pass
-for __required__ in __required_nltk_data__:
-    if __required__ not in __available_nltk_data__:
-        nltk.download(__required__)
 
 # standard arguments for NLIMED setup
 def __pl_type__(x):
@@ -61,10 +47,12 @@ def __multiply_type__(x):
         return x
     raise ValueError("Minimum multiplier is 0")
 
-__dictArgsMandatory__ = {'repo': ['pmr', 'bm', 'all'], 'parser': ['stanford', 'nltk', 'ncbo']}
+__dictArgsMandatory__ = {'repo': ['pmr', 'bm', 'all', 'bm-omex'], 'parser': ['corenlp', 'benepar', 'stanza', 'xstanza', 'ncbo']}
 __dictArgsOptional__ = {'show': ['models', 'sparql', 'annotation', 'verbose'], 'pl': __pl_type__,
                         'alpha': __multiply_type__, 'beta': __multiply_type__, 'gamma': __multiply_type__,
-                        'delta': __multiply_type__, 'quite': False}
+                        'delta': __multiply_type__, 'theta': __multiply_type__, 'cutoff': __multiply_type__,
+                        'tfMode':__pl_type__, 'quite': False}
 __dictDefArgsVal__ = {'repo': __dictArgsMandatory__['repo'][0], 'parser': __dictArgsMandatory__['parser'][0],
                       'show': __dictArgsOptional__['show'], 'pl': 1,
-                      'alpha': 0.4, 'beta': 0.1, 'gamma': 1.0, 'delta': 1.0, 'quite': False}
+                      'alpha': 3.0, 'beta': 3.0, 'gamma': 0.1, 'delta': 0.1, 'theta': 0.38,
+                      'cutoff': 1, 'tfMode':3, 'quite': False}

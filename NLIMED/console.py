@@ -9,16 +9,20 @@ def runTerminal():
         runApp()
     elif '--config' in sys.argv:
         setupSystem()
+    elif '--download' in sys.argv:
+        downloadData()
     elif '--build-index' in sys.argv:
         buildIndex()
+    elif '--hyperparam' in sys.argv:
+        hyperparam()
     else:
         getArguments()
 
 def runApp():
-    from NLIMED.NLIMED import NLIMED
+    from nlimed.nlimed import nlimed
     def getResult(**vargs):
         print('\nREPOSITORY: ' + vargs['repo'].upper())
-        nlimed = NLIMED(**vargs)
+        nlimed = nlimed(**vargs)
         if vargs['show'] == 'models':
             nlimed.getModels(vargs['query'], 'print')
         if vargs['show'] == 'sparql':
@@ -39,33 +43,63 @@ def runApp():
 def setupSystem():
     #config NLIMED
     if all(key in sys.argv for key in ["--apikey","--corenlp-home"]):
-        if sys.argv.index("--apikey") < len(sys.argv)-1 and sys.argv.index("--corenlp-home") < len(sys.argv)-1:
-            file = os.path.join(os.path.dirname(os.path.realpath(__file__)),"config.txt")
-            #setup apikey NCBO and coreNLP home
-            config = {"apikey":sys.argv[sys.argv.index("--apikey")+1],"corenlp-home":sys.argv[sys.argv.index("--corenlp-home")+1]}
-            with open(file, 'w') as fp:
-                json.dump(config, fp)
-                print("  configuration succeed")
+        if sys.argv.index("--apikey")+1 < len(sys.argv) and sys.argv.index("--corenlp-home")+1 < len(sys.argv):
+            apikey = sys.argv[sys.argv.index("--apikey")+1]
+            corenlp_home = sys.argv[sys.argv.index("--corenlp-home")+1]
+            from nlimed.nlimed import config
+            config(parsers={'ncbo':apikey, 'coreNLP':corenlp_home})
+            print("  configuration succeed")
+        else:
+            print("  error config")
+            print("  example: $ nlimed --config --apikey {your-ncbo-api-key} --corenlp-home {CoreNLP-folder}")
     else:
         print("  error config")
-        print("  example: $ NLIMED --config --apikey {your-ncbo-api-key} --corenlp-home {CoreNLP-folder}")
+        print("  example: $ nlimed --config --apikey {your-ncbo-api-key} --corenlp-home {CoreNLP-folder}")
+
+def downloadData():
+    download()
 
 def buildIndex():
     repo = sys.argv[2]
     ontologies = sys.argv[3]
-    if repo in ['pmr','bm']:
-        from NLIMED.rdf_graph_index import  IndexSPARQL
-        from NLIMED.text_feature_index import IndexAnnotation
-        # idxSparql = IndexSPARQL(repo)
-        # idxSparql.buildIndex(*sys.argv)
+
+    if repo in ['pmr', 'bm', 'bm-omex']:
+        from nlimed.rdf_graph_index import  IndexSPARQL
+        from nlimed.text_feature_index import IndexAnnotation
+        idxSparql = IndexSPARQL(repo)
+        idxSparql.buildIndex(*sys.argv)
         # create Index ANNOTATION and inverted index
         idxAnnotation = IndexAnnotation(repo, ontologies)
-        # idxAnnotation.collectClassAttributes()
+        idxAnnotation.collectClassAttributes()
         idxAnnotation.developInvertedIndex()
     else:
         print("  error indexing")
-        print('  pmr: $ NLIMED --build-index pmr "{location-of-ontology-files}"')
-        print('  bm : $ NLIMED --build-index bm "{location-of-ontology-files}" "{location-of-RDF-files}"')
+        print('  pmr: $ nlimed --build-index pmr "{location-of-ontology-files}"')
+        print('  bm : $ nlimed --build-index bm "{location-of-ontology-files}" "{location-of-RDF-files}"')
+
+def hyperparam():
+    """ generate hyperparameter and save it in Files
+        input: - repository
+               - dataTrainZile
+               - precAt -> maximum of precAt
+               - preff/header file to be saved
+               - destination folder
+               - parser
+        how to run: nlimed --hyperparam pmr "DataTest" 9 pure "dest" CoreNLP
+    """
+    repo = sys.argv[2]
+    datatTrainFile = sys.argv[3]
+    precAt = int(sys.argv[4])
+    preffix = sys.argv[5]
+    destination = sys.argv[6]
+    parser = sys.argv[7]
+    from nlimed.nlimed import nlimed
+    nli = nlimed(repo=repo, parser=parser)
+    stats = nli.hyperparam(datatTrainFile, precAt)
+    import json, time
+    filename = destination+preffix+"_"+str(precAt) + "_" + parser+ "_" + str(time.time()) + ".json"
+    with open(filename, 'w') as fp:
+        json.dump(stats, fp)
 
 def getArguments():
     from NLIMED import __dictArgsOptional__, __dictArgsMandatory__, __dictDefArgsVal__
@@ -92,6 +126,12 @@ def getArguments():
         '-g', '--gamma', default=__dictDefArgsVal__['gamma'], help='Minimum gamma is 0', type=__dictArgsOptional__['gamma'])
     parser.add_argument(
         '-d', '--delta', default=__dictDefArgsVal__['delta'], help='Minimum delta is 0', type=__dictArgsOptional__['delta'])
+    parser.add_argument(
+        '-t', '--theta', default=__dictDefArgsVal__['theta'], help='Minimum theta is 0', type=__dictArgsOptional__['theta'])
+    parser.add_argument(
+        '-c', '--cutoff', default=__dictDefArgsVal__['cutoff'], help='Minimum cutoff is 0', type=__dictArgsOptional__['cutoff'])
+    parser.add_argument(
+        '-tf', '--tfMode', default=__dictDefArgsVal__['tfMode'], help='tf mode calculation, [1,2,3]', type=__dictArgsOptional__['tfMode'])
     args = vars(parser.parse_args())
     args['quite'] = False
     return(args)
