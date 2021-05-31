@@ -91,75 +91,6 @@ Here is the process inside NLIMED converting natural language query (NLQ) and SP
 
 3. Retrieve model entities by sending each SPARQLs to model repository SPARQL endpoints.
 
-## Running NLIMED from console (query to get model entities)
-NLIMED can be run directly on command prompt or terminal. There are 2 mandatory arguments and 7 optional arguments. To get help about the required arguments, run:
-```terminal
-NLIMED -h
-```
-then you will get:
-```terminal
-usage: NLIMED [-h] -r {pmr,bm,all} -p {CoreNLP,Benepar,ncbo} -q QUERY
-                 [-pl PL] [-s {models,sparql,annotation,verbose}] [-a ALPHA]
-                 [-b BETA] [-g GAMMA] [-d DELTA] [-t THETA]
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -r {pmr,bm,all}, --repo {pmr,bm,all}
-                        repository name
-  -p {corenlp,benepar,stanza,xstanza,ncbo}, --parser {corenlp,benepar,stanza,xstanza,ncbo}
-                        parser tool
-  -q QUERY, --query QUERY
-                        query -- any text containing words
-  -pl PL                precision level, >=1
-  -s {models,sparql,annotation,verbose}, --show {models,sparql,annotation,verbose}
-                        results presentation type
-  -a ALPHA, --alpha ALPHA
-                        Minimum alpha is 0
-  -b BETA, --beta BETA  Minimum beta is 0
-  -g GAMMA, --gamma GAMMA
-                        Minimum gamma is 0
-  -d DELTA, --delta DELTA
-                        Minimum delta is 0
-  -t THETA, --theta THETA
-                        Minimum theta is 0
-  -c CUTOFF, --cutoff CUTOFF
-                        Minimum cutoff is 0
-  -tf TFMODE, --tfMode TFMODE
-                        tf mode calculation, [1,2,3]
-```
-Here is the description of those arguments:
-* -r {pmr,bm,all} or --repo {pmr,bm,all} (mandatory) is the name of repository. pmr is the Physiome Repository Model, bm is BioSimulations, all is for both repositories
-* -p {corenlp,benepar,stanza,xstanza,ncbo} or --parser {CoreNLP,Benepar,ncbo} (mandatory) is the type of parser for query annotation.
-* -q QUERY or --query QUERY (mandatory) is the query text. For a multi words query, the words should be double quoted.
-* -pl PL (optional) is precision level indicating the number of ontology classes used to construct SPARQL. Larger number will utilised more ontology cllasses which may generate more SPARQL and produce more results. Minimum value is 1. Default value is 1.
-* -s {models,sparql,annotation,verbose} or --show {models,sparql,annotation,verbose} (optional) is for selecting presented results. models shows models, sparql shows all possible SPARQLs, annotation shows annotation results, and verbore shows annotation results, SPARQLs, and models
-* -a ALPHA or --alpha ALPHA (optional) is to set up the weight of preffered label feature. Minimum alpha is 0. Default value is 3.0.
-* -b BETA or --beta BETA (optional) is to set up the weight of synonym feature. Minimum beta is 0. Default value is 3.0.
-* -g GAMMA or --gamma GAMMA (optional) is to set up the weight of definition feature. Minimum gamma is 0. Default value is 0.1.
-* -d DELTA, --delta DELTA (optional) is to set up the weight of parent labels feature. Minimum gamma is 0. Default value is 0.1.
-* -t THETA, --theta THETA (optional) is to set up the weight of description feature. Minimum theta is 0. Default value is 0.38.
-* -c CUTOFF, --cutoff (optional) is the minimum degree of association between a phrases and a ontology class used. Minimum cutoff is 0. Default value is 1.
-* -tf tfMode, --tfMode (optional) is the term frequency calculation mode, 1 = all features with dependency term, 2 = all features without dependency term, 3 = highest feature with dependency term. Devault value is 3.
-
-### Running example
-* running with minimum setup for repository = Physiome Model Repository, parser = Benepar, query = "flux of sodium", and other default arguments values:
-  ```
-  NLIMED -r pmr -p Benepar -q "flux of sodium"
-  ```
-* running with full setup for repository=BioModels, parser=CoreNLP, query="flux of sodium", precision level = 2, alpha = 2, beta = 1, gamma = 1, and delta = 1, theta = 0.4, cutoff = 1.0, tfMode = 3
-  ```
-  NLIMED -r bm -p CoreNLP -q "flux of sodium" -pl 2 -a 2 -b 1 -g 1 -d 1 -t 0.4 -c 1 -tf 3
-  ```
-  Note: running with CoreNLP parser may cause delay local server startup for the first run. However, for the next run, the delay is disappeared.
-
-* running for repository = Physiome Model Repository, parser = NCBO, query = "flux of sodium", precision level = 3,and other default arguments
-
-  ```
-  NLIMED -r pmr -p ncbo -q "flux of sodium" -pl 3
-  ```
-  Note: running with NCBO Parser parser is slower than other parsers because it is using a web service depended on the Internet connection.
-
-
 ## Utilising NLIMED in your Python code
 
 The main class for retrieving model entities from repositories is NLIMED in NLIMED.py. Utilising this class, we can annotate query into ontology classes, get all possible SPARQL, and get model entities. We suggest you to create one NLIMED object for all your queries since it will reuse the loaded indexes so it can save your device resources.
@@ -527,6 +458,74 @@ It is also possible to get SPARQL only without model entities. It utilise getSpa
       OPTIONAL{?Model_entity <http://purl.org/dc/terms/description> ?desc .} }}'
   ]
   ```
+
+  ## Running NLIMED from console (query to get model entities)
+  NLIMED can be run directly on command prompt or terminal. There are 2 mandatory arguments and 7 optional arguments. To get help about the required arguments, run:
+  ```terminal
+  NLIMED -h
+  ```
+  then you will get:
+  ```terminal
+  usage: NLIMED [-h] -r {pmr,bm,all} -p {CoreNLP,Benepar,ncbo} -q QUERY
+                   [-pl PL] [-s {models,sparql,annotation,verbose}] [-a ALPHA]
+                   [-b BETA] [-g GAMMA] [-d DELTA] [-t THETA]
+
+  optional arguments:
+    -h, --help            show this help message and exit
+    -r {pmr,bm,all}, --repo {pmr,bm,all}
+                          repository name
+    -p {corenlp,benepar,stanza,xstanza,ncbo}, --parser {corenlp,benepar,stanza,xstanza,ncbo}
+                          parser tool
+    -q QUERY, --query QUERY
+                          query -- any text containing words
+    -pl PL                precision level, >=1
+    -s {models,sparql,annotation,verbose}, --show {models,sparql,annotation,verbose}
+                          results presentation type
+    -a ALPHA, --alpha ALPHA
+                          Minimum alpha is 0
+    -b BETA, --beta BETA  Minimum beta is 0
+    -g GAMMA, --gamma GAMMA
+                          Minimum gamma is 0
+    -d DELTA, --delta DELTA
+                          Minimum delta is 0
+    -t THETA, --theta THETA
+                          Minimum theta is 0
+    -c CUTOFF, --cutoff CUTOFF
+                          Minimum cutoff is 0
+    -tf TFMODE, --tfMode TFMODE
+                          tf mode calculation, [1,2,3]
+  ```
+  Here is the description of those arguments:
+  * -r {pmr,bm,all} or --repo {pmr,bm,all} (mandatory) is the name of repository. pmr is the Physiome Repository Model, bm is BioSimulations, all is for both repositories
+  * -p {corenlp,benepar,stanza,xstanza,ncbo} or --parser {CoreNLP,Benepar,ncbo} (mandatory) is the type of parser for query annotation.
+  * -q QUERY or --query QUERY (mandatory) is the query text. For a multi words query, the words should be double quoted.
+  * -pl PL (optional) is precision level indicating the number of ontology classes used to construct SPARQL. Larger number will utilised more ontology cllasses which may generate more SPARQL and produce more results. Minimum value is 1. Default value is 1.
+  * -s {models,sparql,annotation,verbose} or --show {models,sparql,annotation,verbose} (optional) is for selecting presented results. models shows models, sparql shows all possible SPARQLs, annotation shows annotation results, and verbore shows annotation results, SPARQLs, and models
+  * -a ALPHA or --alpha ALPHA (optional) is to set up the weight of preffered label feature. Minimum alpha is 0. Default value is 3.0.
+  * -b BETA or --beta BETA (optional) is to set up the weight of synonym feature. Minimum beta is 0. Default value is 3.0.
+  * -g GAMMA or --gamma GAMMA (optional) is to set up the weight of definition feature. Minimum gamma is 0. Default value is 0.1.
+  * -d DELTA, --delta DELTA (optional) is to set up the weight of parent labels feature. Minimum gamma is 0. Default value is 0.1.
+  * -t THETA, --theta THETA (optional) is to set up the weight of description feature. Minimum theta is 0. Default value is 0.38.
+  * -c CUTOFF, --cutoff (optional) is the minimum degree of association between a phrases and a ontology class used. Minimum cutoff is 0. Default value is 1.
+  * -tf tfMode, --tfMode (optional) is the term frequency calculation mode, 1 = all features with dependency term, 2 = all features without dependency term, 3 = highest feature with dependency term. Devault value is 3.
+
+  ### Running example
+  * running with minimum setup for repository = Physiome Model Repository, parser = Benepar, query = "flux of sodium", and other default arguments values:
+    ```
+    NLIMED -r pmr -p Benepar -q "flux of sodium"
+    ```
+  * running with full setup for repository=BioModels, parser=CoreNLP, query="flux of sodium", precision level = 2, alpha = 2, beta = 1, gamma = 1, and delta = 1, theta = 0.4, cutoff = 1.0, tfMode = 3
+    ```
+    NLIMED -r bm -p CoreNLP -q "flux of sodium" -pl 2 -a 2 -b 1 -g 1 -d 1 -t 0.4 -c 1 -tf 3
+    ```
+    Note: running with CoreNLP parser may cause delay local server startup for the first run. However, for the next run, the delay is disappeared.
+
+  * running for repository = Physiome Model Repository, parser = NCBO, query = "flux of sodium", precision level = 3,and other default arguments
+
+    ```
+    NLIMED -r pmr -p ncbo -q "flux of sodium" -pl 3
+    ```
+    Note: running with NCBO Parser parser is slower than other parsers because it is using a web service depended on the Internet connection.
 
 ## Recreate Indexes (RDF Graph Index and Text Feature Index)
 
