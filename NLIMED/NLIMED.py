@@ -1,19 +1,14 @@
-def config(parsers={'ncbo':'fc5d5241-1e8e-4b44-b401-310ca39573f6', 'coreNLP':'~/corenlp'}):
+def config(parsers):
     """
         Configuring apikey for ncbo and/or
         installing coreNLP and start the server
         Input: - parsers is a dictionary consisting of pairs of parser name and
                  its keyword or installation location
-        Example: - config(parsers={'ncbo':'fc5d5241-1e8e-4b44-b401-310ca39573f6', 'coreNLP':'~/corenlp'})
-                 - config() --> configuration with default value
+        Example: - config(parsers={'ncbo':'bioportal api key', 'coreNLP':'installation location'})
     """
     import json
     import os.path
-    currentPath = os.path.dirname(os.path.realpath(__file__))
-    configFile = os.path.join(currentPath,'config.txt')
-
-    # setup coreNLP server if the installation location is available
-    if 'coreNLP' in parsers:
+    if 'coreNLP' in parsers and 'ncbo' in parsers:
 
         # make sure the input is abs path, if not, convert it to abs path
         from os.path import expanduser
@@ -30,14 +25,21 @@ def config(parsers={'ncbo':'fc5d5241-1e8e-4b44-b401-310ca39573f6', 'coreNLP':'~/
         else:
             print('CoreNLP already installed')
 
-    with open(configFile, 'w') as fp:
-        json.dump(parsers, fp)
+        currentPath = os.path.dirname(os.path.realpath(__file__))
+        configFile = os.path.join(currentPath, 'config.txt')
+        with open(configFile, 'w') as fp:
+            json.dump(parsers, fp)
+    else:
+        print("Error configuration \n \
+               Format: config({'ncbo':'bioportal api key', 'coreNLP':'installation location'})"
+              )
+
 
 def getConfig():
     import json
     import os.path
     currentPath = os.path.dirname(os.path.realpath(__file__))
-    file = os.path.join(currentPath,"config.txt")
+    file = os.path.join(currentPath, "config.txt")
     isExist = os.path.exists(file)
     if isExist:
         with open(file, 'r') as fp:
@@ -45,6 +47,7 @@ def getConfig():
         return data
     else:
         return {}
+
 
 def download():
     import os
@@ -65,13 +68,15 @@ def download():
     for required in ['anatem.pt', 'bionlp13cg.pt', 'i2b2.pt', 'jnlpba.pt']:
         if not os.path.exists(os.path.join(stanza_rsc, required)):
             print('downloading stanza: ', required[:-3])
-            stanza.download('en', package='craft', processors={'ner': required[:-3]}, verbose=False)
+            stanza.download('en', package='craft', processors={
+                            'ner': required[:-3]}, verbose=False)
 
     # check benepar_data availability, download if not available
     import benepar
     if not os.path.exists(os.path.join(nltk_rsc, 'models', 'benepar_en3')):
         print('downloading benepar: benepar_en3')
         benepar.download('benepar_en3')
+
 
 class NLIMED:
     """
@@ -112,6 +117,7 @@ class NLIMED:
 
             getVerbose(query, format)
     """
+
     def __init__(self, **vargs):
         vargs = self.__getValidArgs(**vargs)
         parser = vargs['parser'].lower()
@@ -132,7 +138,8 @@ class NLIMED:
                 from NLIMED.query_annotator import MixedAnnotator
                 self.__annotator = MixedAnnotator(**vargs)
         except:
-            raise Error("  Error: cannot instantiate annotator, try other parser {CoreNLP, Benepar, ncbo}")
+            raise Error(
+                "  Error: cannot instantiate annotator, try other parser {CoreNLP, Benepar, ncbo}")
         from NLIMED.sparql_generator import SPARQLGenerator
         self.__sparqlGen = SPARQLGenerator(vargs['repo'])
         pass
@@ -142,6 +149,7 @@ class NLIMED:
         Check wheteher the arguments provided to create NLIMED instance are appropriate and correct
         """
         from NLIMED import __dictArgsOptional__, __dictArgsMandatory__, __dictDefArgsVal__
+
         def __showErrorMessage():
             return """
             arguments are not complete or values are not correct
@@ -175,7 +183,7 @@ class NLIMED:
                         if vargs[key] not in __dictArgsOptional__[key]:
                             raise ValueError(__showErrorMessage())
                     elif isinstance(__dictArgsOptional__[key], bool):
-                        if not isinstance(vargs[key],bool):
+                        if not isinstance(vargs[key], bool):
                             raise ValueError(__showErrorMessage())
                     else:
                         vargs[key] = __dictArgsOptional__[key](vargs[key])
@@ -207,17 +215,19 @@ class NLIMED:
                 print: print model entities to console
         """
         annotated = self.__annotator.annotate(query)
-        predicates = annotated['predicates'] if 'predicates' in annotated else []
-        resultDict = {'vars': [], 'results': [], 'sparqls':[]}
+        predicates = annotated['predicates'] if 'predicates' in annotated else [
+        ]
+        resultDict = {'vars': [], 'results': [], 'sparqls': []}
         for annTerm in annotated['result']:
             sparqls = self.__sparqlGen.constructSPARQL(annTerm, predicates)
             for sparql in sparqls:
                 sparqlResult = self.__sparqlGen.runSparQL(sparql[0])
-                if len(sparqlResult)>0:
+                if len(sparqlResult) > 0:
                     resultDict['sparqls'] += [sparql]
                     resultDict['vars'] = sparqlResult['head']['vars']
                     for binding in sparqlResult['results']['bindings']:
-                        result = {var: binding[var]['value'] for var in binding}
+                        result = {var: binding[var]['value']
+                                  for var in binding}
                         if result not in resultDict['results']:
                             resultDict['results'] += [result]
         if format == 'json':
@@ -246,11 +256,12 @@ class NLIMED:
                 print: print SPARQL[s] to console
         """
         annotated = self.__annotator.annotate(query)
-        predicates = annotated['predicates'] if 'predicates' in annotated else []
+        predicates = annotated['predicates'] if 'predicates' in annotated else [
+        ]
         sparqlList = []
         for annTerm in annotated['result']:
             sparqlList += list(self.__sparqlGen.constructSPARQL(annTerm, predicates))
-        sparqlList.sort(key=lambda x:x[1], reverse=True)
+        sparqlList.sort(key=lambda x: x[1], reverse=True)
 
         if format == 'json':
             return sparqlList
@@ -313,7 +324,8 @@ class NLIMED:
             return {'annotated': annotated, 'sparql': sparqlList, 'models': modelList}
 
     def setWeighting(self, alpha, beta, gamma, delta, theta, cutoff, pl, tfMode=1):
-        self.__annotator.setWeighting(alpha, beta, gamma, delta, theta, cutoff, pl, tfMode)
+        self.__annotator.setWeighting(
+            alpha, beta, gamma, delta, theta, cutoff, pl, tfMode)
 
     def getWeighting(self):
         return self.__annotator.getWeighting()

@@ -1,6 +1,5 @@
 import pandas as pd
 import sys
-import urllib.request
 import os
 
 from itertools import chain
