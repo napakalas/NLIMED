@@ -5,6 +5,7 @@ from textwrap import indent
 from NLIMED.general import *
 from rdflib import Graph
 
+
 class SPARQLGenerator(GeneralNLIMED):
     def __init__(self, repository):
         super(SPARQLGenerator, self).__init__()
@@ -12,36 +13,50 @@ class SPARQLGenerator(GeneralNLIMED):
         self.__setupSPARQLEP()
         if repository == 'pmr':
             self.__initPMR()
-        elif repository in ['bm','bm-omex']:
+        elif repository in ['bm', 'bm-omex']:
             self.__init_BM_BMOmex()
 
     def __initPMR(self):  # initialisation of PMR
         self.idxs = {}
-        self.idxs['object_id'] = self._loadJson('indexes',self.repository + '_idx_object_id')
-        self.idxs['subject_id'] = self._loadJson('indexes',self.repository + '_idx_subject_id')
-        self.idxs['obj_sbj'] = self._loadJson('indexes',self.repository + '_idx_obj_sbj')
-        self.idxs['sbjobj_tracks'] = {tuple(sbjobj_track[0]):sbjobj_track[1] for sbjobj_track in self._loadJson('indexes',self.repository + '_idx_sbjobj_tracks')}
-        self.idxs['id_track'] = self._loadJson('indexes',self.repository + '_idx_id_track')
-        self.idxs['id_pred'] = self._loadJson('indexes',self.repository + '_idx_id_pred')
-        self.idxs['pref_ns'] = self._loadJson('indexes',self.repository + '_idx_pref_ns')
-        self.idxs['id_object'] = self._loadJson('indexes',self.repository + '_idx_id_object')
-        self.idxs['id_subject'] = self._loadJson('indexes',self.repository + '_idx_id_subject')
+        self.idxs['object_id'] = self._loadJson(
+            'indexes', self.repository + '_idx_object_id')
+        self.idxs['subject_id'] = self._loadJson(
+            'indexes', self.repository + '_idx_subject_id')
+        self.idxs['obj_sbj'] = self._loadJson(
+            'indexes', self.repository + '_idx_obj_sbj')
+        self.idxs['sbjobj_tracks'] = {tuple(sbjobj_track[0]): sbjobj_track[1] for sbjobj_track in self._loadJson(
+            'indexes', self.repository + '_idx_sbjobj_tracks')}
+        self.idxs['id_track'] = self._loadJson(
+            'indexes', self.repository + '_idx_id_track')
+        self.idxs['id_pred'] = self._loadJson(
+            'indexes', self.repository + '_idx_id_pred')
+        self.idxs['pref_ns'] = self._loadJson(
+            'indexes', self.repository + '_idx_pref_ns')
+        self.idxs['id_object'] = self._loadJson(
+            'indexes', self.repository + '_idx_id_object')
+        self.idxs['id_subject'] = self._loadJson(
+            'indexes', self.repository + '_idx_id_subject')
         # initialized based query for each subject
         self.header = 'SELECT ?graph ?Model_entity ?desc WHERE { GRAPH ?graph {{ '
         self.union = ' } UNION { '
         self.tail = [' ?Model_entity <http://purl.org/dc/terms/description> ?desc . ',
-                     ' FILTER NOT EXISTS {?Model_entity <http://purl.org/dc/terms/description> ?dsc .} ']
-        self.closer = ' }}} '
+                     ' ?desc ?x ?Model_entity .} ']
+        self.closer = ' }} '
 
     def __init_BM_BMOmex(self):  # initialisation of BioModels or OMEX-BioModels
         self.idxs = {}
-        self.idxs['id_object'] = self._loadJson('indexes',self.repository + '_object.json')
-        self.idxs['object_id'] = {val: key for key, val in self.idxs['id_object'].items()}
+        self.idxs['id_object'] = self._loadJson(
+            'indexes', self.repository + '_object.json')
+        self.idxs['object_id'] = {val: key for key,
+                                  val in self.idxs['id_object'].items()}
         self.idxs['obj_sbj'] = {}
         self.idxs['sbjobj_track'] = {}
-        self.idxs['id_track'] = self._loadJson('indexes',self.repository + '_track.json')
-        self.idxs['id_pred'] =  self._loadJson('indexes',self.repository + '_predicate.json')
-        rdfPath = self._loadBinaryInteger('indexes',self.repository + '_rdfPaths')
+        self.idxs['id_track'] = self._loadJson(
+            'indexes', self.repository + '_track.json')
+        self.idxs['id_pred'] = self._loadJson(
+            'indexes', self.repository + '_predicate.json')
+        rdfPath = self._loadBinaryInteger(
+            'indexes', self.repository + '_rdfPaths')
         for i in range(0, len(rdfPath), 3):
             sbj, track, obj = rdfPath[i], rdfPath[i + 1], rdfPath[i + 2]
             self.idxs['obj_sbj'][obj] = self.idxs['obj_sbj'][obj] if obj in self.idxs['obj_sbj'] else set()
@@ -83,9 +98,9 @@ class SPARQLGenerator(GeneralNLIMED):
     def constructSPARQL(self, instances, preds=[]):
         if self.repository == 'pmr':
             return self.__constructSPARQLPMR(instances, preds)
-        elif self.repository in ['bm','bm-omex']:
+        elif self.repository in ['bm', 'bm-omex']:
             return self.__constructSPARQL_BM_BMOmex(instances, preds)
-        
+
     def __constructSPARQLPMR(self, instances, preds):
         objs = instances[0]
         list_sbj = set()
@@ -112,7 +127,8 @@ class SPARQLGenerator(GeneralNLIMED):
         for sbj in list_sbj:
             query_track_ids = []
             for obj in list_obj:
-                query_track_ids += [copy.deepcopy(self.idxs['sbjobj_tracks'][(sbj, obj)])]
+                query_track_ids += [copy.deepcopy(
+                    self.idxs['sbjobj_tracks'][(sbj, obj)])]
             query_track_ids = list(itertools.product(*query_track_ids))
             query_seq_track_ids += query_track_ids
         # remove duplicate, there is possibility more than 1 query
@@ -121,22 +137,25 @@ class SPARQLGenerator(GeneralNLIMED):
         possibleSparql = set()
         for seq_track_ids in query_seq_track_ids:
             longestTrack = 0
-            objsVal = instances[1] # initiate weight for this SPARQL candidate
+            objsVal = instances[1]  # initiate weight for this SPARQL candidate
             seq_pred_ids = []  # one sequence of query
             seq_obj_ids = []  # to store object connector
             # access each track in a possible query
             for i in range(len(seq_track_ids)):
                 track_id = seq_track_ids[i]
-                longestTrack = len(self.idxs['id_track'][track_id]) if len(self.idxs['id_track'][track_id]) > longestTrack else longestTrack
+                longestTrack = len(self.idxs['id_track'][track_id]) if len(
+                    self.idxs['id_track'][track_id]) > longestTrack else longestTrack
                 seq_pred_id = copy.deepcopy(self.idxs['id_track'][track_id])
                 seq_pred_ids += [seq_pred_id]
-                seq_obj_ids += [['' for x in range(len(self.idxs['id_track'][track_id]))]]
+                seq_obj_ids += [
+                    ['' for x in range(len(self.idxs['id_track'][track_id]))]]
                 # checking the available predicate for additional weighting
                 if len(preds) > 0:
                     if len(preds[i]) > 0:
                         for pred in preds[i]:
                             if pred[0] in seq_pred_id:
-                                objsVal += pred[1] # adding appeared predicate (can be modified)
+                                # adding appeared predicate (can be modified)
+                                objsVal += pred[1]
             # identified conjunction object to create path between subject and object
             init_seq = 'a'
             conj_obj = 'a'
@@ -154,18 +173,21 @@ class SPARQLGenerator(GeneralNLIMED):
             seq_query = set()
             for obj_pos in range(len(seq_pred_ids)):
                 for col in range(len(seq_pred_ids[obj_pos])):
-                    pred = copy.deepcopy(self.idxs['id_pred'][seq_pred_ids[obj_pos][col]])
+                    pred = copy.deepcopy(
+                        self.idxs['id_pred'][seq_pred_ids[obj_pos][col]])
                     ns = self.idxs['pref_ns'][str(pred[0])]
                     nsPred = ' <' + ns + pred[1] + '> '
                     nsPred = ' ?Model_entity ' + nsPred if col == 0 else ' ?' + \
                         seq_obj_ids[obj_pos][col - 1] + ' ' + nsPred
-                    nsPred += '<' + self.idxs['id_object'][str(list_obj[obj_pos])] + '> . ' if col == len(seq_pred_ids[obj_pos]) - 1 else '?' + seq_obj_ids[obj_pos][col] + ' . '
+                    nsPred += '<' + self.idxs['id_object'][str(list_obj[obj_pos])] + '> . ' if col == len(
+                        seq_pred_ids[obj_pos]) - 1 else '?' + seq_obj_ids[obj_pos][col] + ' . '
                     seq_query.add(nsPred)
             sparql = ''
             for nsPred in seq_query:
                 if nsPred.find('?Model_entity') > -1:
                     nsModelEntity = nsPred[:-3]
-                    nsModelEntity = nsModelEntity[:nsModelEntity.rfind(' ')+1]+'?desc . '
+                    nsModelEntity = nsModelEntity[:nsModelEntity.rfind(
+                        ' ')+1]+'?desc . '
                 sparql += nsPred
             sparql0 = sparql + self.tail[0]
             sparql1 = sparql + nsModelEntity + self.tail[1]
@@ -182,13 +204,15 @@ class SPARQLGenerator(GeneralNLIMED):
             if objs[i] in self.idxs['object_id']:
                 obj_id = self.idxs['object_id'][objs[i]]
                 list_obj += [obj_id]
-                nextList = set(copy.deepcopy(self.idxs['obj_sbj'][int(obj_id)]))
+                nextList = set(copy.deepcopy(
+                    self.idxs['obj_sbj'][int(obj_id)]))
                 if i == 0:
                     list_sbj = nextList
                 else:
                     list_sbj = list_sbj.intersection(nextList)
             else:
-                print('\t%s is not in %s, it is ignored' %(objs[i],self.repository))
+                print('\t%s is not in %s, it is ignored' %
+                      (objs[i], self.repository))
 
         if len(list_sbj) == 0:
             return []
@@ -197,7 +221,8 @@ class SPARQLGenerator(GeneralNLIMED):
         query_seq_track_ids = []
         hasDescription = {}
         for sbj in list_sbj:
-            query_track_ids = [copy.deepcopy(self.idxs['sbjobj_track'][(sbj, int(obj))]) for obj in list_obj]
+            query_track_ids = [copy.deepcopy(
+                self.idxs['sbjobj_track'][(sbj, int(obj))]) for obj in list_obj]
             query_track_ids = list(itertools.product(*query_track_ids))
             query_seq_track_ids += query_track_ids
 
@@ -205,22 +230,26 @@ class SPARQLGenerator(GeneralNLIMED):
         possibleSparql = set()
         for seq_track_ids in query_seq_track_ids:
             longestTrack = 0
-            objsVal = instances[1] # initiate weight for this SPARQL candidate
+            objsVal = instances[1]  # initiate weight for this SPARQL candidate
             seq_pred_ids = []  # one sequence of query
             seq_obj_ids = []  # to store object connector
             for i in range(len(seq_track_ids)):
                 track_id = seq_track_ids[i]
-                longestTrack = len(self.idxs['id_track'][str(track_id)]) if len(self.idxs['id_track'][str(track_id)]) > longestTrack else longestTrack
-                seq_pred_id = copy.deepcopy(self.idxs['id_track'][str(track_id)])
+                longestTrack = len(self.idxs['id_track'][str(track_id)]) if len(
+                    self.idxs['id_track'][str(track_id)]) > longestTrack else longestTrack
+                seq_pred_id = copy.deepcopy(
+                    self.idxs['id_track'][str(track_id)])
                 seq_pred_ids += [seq_pred_id]
-                seq_obj_ids += [['' for x in range(len(self.idxs['id_track'][str(track_id)]))]]
+                seq_obj_ids += [
+                    ['' for x in range(len(self.idxs['id_track'][str(track_id)]))]]
 
                 # checking the available predicate for additional weighting
                 if len(preds) > 0:
                     if len(preds[i]) > 0:
                         for pred in preds[i]:
                             if self.idxs['id_pred'][pred[0]] in seq_pred_id:
-                                objsVal += pred[1] # adding appeared predicate (can be modified)
+                                # adding appeared predicate (can be modified)
+                                objsVal += pred[1]
 
             # identified conjunction object to create path between subject and object
             init_seq = 'a'
@@ -242,7 +271,8 @@ class SPARQLGenerator(GeneralNLIMED):
                     pred = ' <' + seq_pred_ids[obj_pos][col] + '> '
                     nsPred = ' ?element ' + pred if col == 0 else ' ?' + \
                         seq_obj_ids[obj_pos][col - 1] + ' ' + pred
-                    nsPred += '<' + self.idxs['id_object'][list_obj[obj_pos]] + '> . ' if col == len(seq_pred_ids[obj_pos]) - 1 else '?' + seq_obj_ids[obj_pos][col] + ' . '
+                    nsPred += '<' + self.idxs['id_object'][list_obj[obj_pos]] + '> . ' if col == len(
+                        seq_pred_ids[obj_pos]) - 1 else '?' + seq_obj_ids[obj_pos][col] + ' . '
                     seq_query.add(nsPred)
 
             if self.repository == 'bm':
@@ -264,6 +294,10 @@ class SPARQLGenerator(GeneralNLIMED):
         return possibleSparql
 
     def runSparQL(self, query):
+        import os
+        import ssl
+        if (not os.environ.get('PYTHONHTTPSVERIFY', '') and getattr(ssl, '_create_unverified_context', None)):
+            ssl._create_default_https_context = ssl._create_unverified_context
         self.sparqlEP.setQuery(query)
         self.sparqlEP.setReturnFormat(JSON)
         return self.sparqlEP.query().convert()
