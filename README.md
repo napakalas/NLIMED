@@ -12,11 +12,24 @@ Note: model entities extracted from BioModels are those having ontology classes 
 License :: OSI Approved :: GNU General Public License (GPL)
 
 ## Demo
-1. [Online web](http://130.216.217.102/nlimed)
-2. [Colab](https://colab.research.google.com/drive/1xq3ewKIT9pHD0AveWuYy2cpJvG4oLjDR#scrollTo=VYv3uMcMt6HJ) - online tutorial
+1. Online web: [http://130.216.217.30/nlimed](http://130.216.217.30/nlimed)
+2. Online tutorial: [Colab](https://colab.research.google.com/drive/1xq3ewKIT9pHD0AveWuYy2cpJvG4oLjDR#scrollTo=VYv3uMcMt6HJ)
 
 ## References
-The main reference of this work is: https://doi.org/10.1101/756304
+The main reference of this work is: https://doi.org/10.3389/fphys.2022.820683
+```
+@article{munarko_nlimed_2022,
+  title = {{{NLIMED}}: {{Natural Language Interface}} for {{Model Entity Discovery}} in {{Biosimulation Model Repositories}}},
+  shorttitle = {{{NLIMED}}},
+  author = {Munarko, Yuda and Sarwar, Dewan M. and Rampadarath, Anand and Atalag, Koray and Gennari, John H. and Neal, Maxwell L. and Nickerson, David P.},
+  year = {2022},
+  journal = {Frontiers in Physiology},
+  volume = {13},
+  issn = {1664-042X},
+}
+```
+
+
 
 Cite the following works when you implement NLIMED with parser or nlp of:
 1. CoreNLP: https://stanfordnlp.github.io/CoreNLP/citing.html
@@ -31,9 +44,7 @@ We sugest you to install NLIMED from PyPI. If you already installed [pip](https:
   ```
 As an alternative, you can clone and download this github repository and use the following command:
   ```
-  git clone https://github.com/napakalas/NLIMED.git
-  cd NLIMED
-  pip install -e .
+  pip install git+https://github.com/napakalas/NLIMED.git
   ```
 
 Follow this [Colab](https://colab.research.google.com/drive/1xq3ewKIT9pHD0AveWuYy2cpJvG4oLjDR#scrollTo=VYv3uMcMt6HJ) tutorial for easy step by step installation and utilisation.
