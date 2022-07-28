@@ -1,38 +1,37 @@
-def config(parsers):
+def config(**parsers):
     """
         Configuring apikey for ncbo and/or
         installing coreNLP and start the server
-        Input: - parsers is a dictionary consisting of pairs of parser name and
-                 its keyword or installation location
-        Example: - config(parsers={'ncbo':'bioportal api key', 'coreNLP':'installation location'})
+        Input: - coreNLP = 'location to install'
+               - ncbo = 'apy key acquired from ncbo portal'
+        Example: - config(ncbo = 'bioportal api key', coreNLP = 'installation location')
     """
     import json
     import os.path
-    if 'coreNLP' in parsers and 'ncbo' in parsers:
+    if 'coreNLP' not in parsers:
+        parsers['coreNLP'] = '~/corenlp'
+    if 'ncbo' not in parsers:
+        parsers['ncbo'] = 'ncbo'
 
-        # make sure the input is abs path, if not, convert it to abs path
-        from os.path import expanduser
-        parsers['coreNLP'] = expanduser(parsers['coreNLP'])
-        if not os.path.isabs(parsers['coreNLP']):
-            parsers['coreNLP'] = expanduser('~/' + parsers['coreNLP'])
+    # make sure the input is abs path, if not, convert it to abs path
+    from os.path import expanduser
+    parsers['coreNLP'] = expanduser(parsers['coreNLP'])
+    if not os.path.isabs(parsers['coreNLP']):
+        parsers['coreNLP'] = expanduser('~/' + parsers['coreNLP'])
 
-        # install when it it not yet installed
-        if not os.path.isdir(parsers['coreNLP']):
-            print('Relax ... installing CoreNLP take minutes')
-            import stanza
-            stanza.install_corenlp(dir=parsers['coreNLP'])
-            parsers['coreNLP_EP'] = 'http://localhost:9001'
-        else:
-            print('CoreNLP already installed')
-
-        currentPath = os.path.dirname(os.path.realpath(__file__))
-        configFile = os.path.join(currentPath, 'config.txt')
-        with open(configFile, 'w') as fp:
-            json.dump(parsers, fp)
+    # install when it it not yet installed
+    if not os.path.isdir(parsers['coreNLP']):
+        print('Relax ... installing CoreNLP take minutes')
+        import stanza
+        stanza.install_corenlp(dir=parsers['coreNLP'])
+        parsers['coreNLP_EP'] = 'http://localhost:9001'
     else:
-        print("Error configuration \n \
-               Format: config({'ncbo':'bioportal api key', 'coreNLP':'installation location'})"
-              )
+        print('CoreNLP already installed')
+
+    currentPath = os.path.dirname(os.path.realpath(__file__))
+    configFile = os.path.join(currentPath, 'config.txt')
+    with open(configFile, 'w') as fp:
+        json.dump(parsers, fp)
 
 
 def getConfig():

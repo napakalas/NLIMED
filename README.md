@@ -57,7 +57,7 @@ NLIMED implements CoreNLP Parser, Benepar Parser, and NCBO parser. You may selec
   * To run CoreNLP and NCBO, you need to run configuration. It can be using default value
     ```python
     from NLIMED import config
-    config()
+    config() # cannot use NCBO
     ```
     or using your own [NCBO api key](https://bioportal.bioontology.org/help#Getting_an_API_key) and self defined CoreNLP installation location
     ```python
