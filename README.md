@@ -62,7 +62,7 @@ NLIMED implements CoreNLP Parser, Benepar Parser, and NCBO parser. You may selec
     or using your own [NCBO api key](https://bioportal.bioontology.org/help#Getting_an_API_key) and self defined CoreNLP installation location
     ```python
     from NLIMED import config
-    config(apikey='your-api-key', corenlp_home='installation-location')
+    config(ncbo='your-api-key', coreNLP='installation-location')
     ```
 
   * It is also possible to run configuration from command prompt or terminal:
